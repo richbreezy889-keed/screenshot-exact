@@ -1,24 +1,149 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CheckCircle2, Eye, Megaphone, Plus, ShieldCheck, UserPlus, Wallet, Gauge } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getActiveCampaigns, getAttentionItems, getDailySeries, getStats } from "@/lib/api";
+import { useApp } from "@/lib/i18n";
+import { formatTZS, formatViews } from "@/lib/format";
+import { BudgetBar, ListState, MoneyText, Panel, StatCard, StatusBadge, ViewsText } from "@/components/biboh/primitives";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Dashboard — Biboh" },
+      { name: "description", content: "Track spend, verified views and active creator campaigns on Biboh." },
+      { property: "og:title", content: "Dashboard — Biboh" },
+      { property: "og:description", content: "Track spend, verified views and active creator campaigns on Biboh." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Dashboard,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Dashboard() {
+  const { t } = useApp();
+  const stats = useQuery({ queryKey: ["stats"], queryFn: getStats });
+  const series = useQuery({ queryKey: ["series"], queryFn: getDailySeries });
+  const attention = useQuery({ queryKey: ["attention"], queryFn: getAttentionItems });
+  const active = useQuery({ queryKey: ["campaigns", "live"], queryFn: getActiveCampaigns });
+
+  const icons = { approveVideo: CheckCircle2, verifyViews: ShieldCheck, applicants: UserPlus } as const;
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="mx-auto max-w-7xl space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold md:text-3xl">{t("greeting")} 👋</h1>
+          <p className="mt-1 text-muted-foreground">{t("greetingSub")}</p>
+        </div>
+        <Button asChild variant="hero" size="lg" className="rounded-xl">
+          <Link to="/campaigns/new"><Plus className="h-4 w-4" />{t("createCampaign")}</Link>
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 md:gap-4">
+        {stats.isLoading || !stats.data ? (
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl bg-secondary" />)
+        ) : (
+          <>
+            <StatCard hero label={t("totalSpend")} value={<MoneyText value={stats.data.spend} />} icon={<Wallet className="h-4 w-4" />} />
+            <StatCard label={t("verifiedViews")} value={<ViewsText value={stats.data.views} />} icon={<Eye className="h-4 w-4" />} />
+            <StatCard label={t("activeCampaigns")} value={stats.data.active} icon={<Megaphone className="h-4 w-4" />} />
+            <StatCard label={t("avgCpm")} value={<MoneyText value={stats.data.avgCpm} />} icon={<Gauge className="h-4 w-4" />} />
+          </>
+        )}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Panel className="lg:col-span-2">
+          <h2 className="font-semibold">{t("last30")}</h2>
+          <div className="mt-4 h-72">
+            {series.isLoading ? (
+              <Skeleton className="h-full rounded-xl bg-secondary" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={series.data} margin={{ left: 0, right: 8 }}>
+                  <defs>
+                    <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.5} />
+                      <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gs" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={(d: string) => d.slice(8)} stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="v" tickFormatter={formatViews} stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} width={40} />
+                  <YAxis yAxisId="s" orientation="right" hide />
+                  <Tooltip
+                    contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--popover-foreground)" }}
+                    formatter={(v: number, name: string) => (name === "spend" ? [formatTZS(v), t("spend")] : [formatViews(v), t("views")])}
+                  />
+                  <Area yAxisId="v" type="monotone" dataKey="views" stroke="var(--chart-1)" strokeWidth={2} fill="url(#gv)" />
+                  <Area yAxisId="s" type="monotone" dataKey="spend" stroke="var(--chart-2)" strokeWidth={2} fill="url(#gs)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Panel>
+
+        <Panel>
+          <h2 className="font-semibold">{t("attention")}</h2>
+          <div className="mt-4">
+            <ListState isLoading={attention.isLoading} isError={attention.isError} isEmpty={!attention.data?.length} emptyText={t("emptyAttention")} onRetry={() => attention.refetch()}>
+              <ul className="space-y-2">
+                {attention.data?.map((a) => {
+                  const Icon = icons[a.kind];
+                  return (
+                    <li key={a.id}>
+                      <button className="flex w-full items-center gap-3 rounded-xl bg-secondary p-3 text-left hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <span className="rounded-lg bg-accent/15 p-2 text-accent"><Icon className="h-4 w-4" aria-hidden /></span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium">
+                            <span className="tnum">{a.kind === "verifyViews" ? formatViews(a.count) : a.count}</span> {t(a.kind)}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">{a.campaign}{a.creator && ` · ${a.creator}`}</span>
+                        </span>
+                        <span className="text-xs font-semibold text-primary">{t("review")}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </ListState>
+          </div>
+        </Panel>
+      </div>
+
+      <Panel>
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{t("activeCampaigns")}</h2>
+          <Link to="/campaigns" className="text-sm font-medium text-primary hover:underline">{t("all")} →</Link>
+        </div>
+        <div className="mt-4">
+          <ListState isLoading={active.isLoading} isError={active.isError} isEmpty={!active.data?.length} emptyText={t("emptyCampaigns")} onRetry={() => active.refetch()}>
+            <ul className="divide-y">
+              {active.data?.map((c) => (
+                <li key={c.id} className="grid gap-3 py-4 md:grid-cols-[1fr_1.4fr] md:items-center md:gap-8">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{c.title}</p>
+                      <p className="text-xs text-muted-foreground">{c.brand} · <ViewsText value={c.views} /> {t("views").toLowerCase()}</p>
+                    </div>
+                    <StatusBadge status={c.status} />
+                  </div>
+                  <BudgetBar spent={c.spent} budget={c.budget} />
+                </li>
+              ))}
+            </ul>
+          </ListState>
+        </div>
+      </Panel>
     </div>
   );
 }
