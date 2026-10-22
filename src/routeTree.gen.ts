@@ -14,6 +14,7 @@ import { Route as CreatorsRouteImport } from './routes/creators'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as CampaignsIndexRouteImport } from './routes/campaigns.index'
+import { Route as CampaignsNewRouteImport } from './routes/campaigns.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,12 +41,18 @@ const CampaignsIndexRoute = CampaignsIndexRouteImport.update({
   path: '/campaigns/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampaignsNewRoute = CampaignsNewRouteImport.update({
+  id: '/campaigns/new',
+  path: '/campaigns/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/creators': typeof CreatorsRoute
   '/settings': typeof SettingsRoute
   '/wallet': typeof WalletRoute
+  '/campaigns/new': typeof CampaignsNewRoute
   '/campaigns/': typeof CampaignsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/creators': typeof CreatorsRoute
   '/settings': typeof SettingsRoute
   '/wallet': typeof WalletRoute
+  '/campaigns/new': typeof CampaignsNewRoute
   '/campaigns': typeof CampaignsIndexRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,34 @@ export interface FileRoutesById {
   '/creators': typeof CreatorsRoute
   '/settings': typeof SettingsRoute
   '/wallet': typeof WalletRoute
+  '/campaigns/new': typeof CampaignsNewRoute
   '/campaigns/': typeof CampaignsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/creators' | '/settings' | '/wallet' | '/campaigns/'
+  fullPaths:
+    | '/'
+    | '/creators'
+    | '/settings'
+    | '/wallet'
+    | '/campaigns/new'
+    | '/campaigns/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/creators' | '/settings' | '/wallet' | '/campaigns'
-  id: '__root__' | '/' | '/creators' | '/settings' | '/wallet' | '/campaigns/'
+  to:
+    | '/'
+    | '/creators'
+    | '/settings'
+    | '/wallet'
+    | '/campaigns/new'
+    | '/campaigns'
+  id:
+    | '__root__'
+    | '/'
+    | '/creators'
+    | '/settings'
+    | '/wallet'
+    | '/campaigns/new'
+    | '/campaigns/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +104,7 @@ export interface RootRouteChildren {
   CreatorsRoute: typeof CreatorsRoute
   SettingsRoute: typeof SettingsRoute
   WalletRoute: typeof WalletRoute
+  CampaignsNewRoute: typeof CampaignsNewRoute
   CampaignsIndexRoute: typeof CampaignsIndexRoute
 }
 
@@ -116,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CampaignsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campaigns/new': {
+      id: '/campaigns/new'
+      path: '/campaigns/new'
+      fullPath: '/campaigns/new'
+      preLoaderRoute: typeof CampaignsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -124,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   CreatorsRoute: CreatorsRoute,
   SettingsRoute: SettingsRoute,
   WalletRoute: WalletRoute,
+  CampaignsNewRoute: CampaignsNewRoute,
   CampaignsIndexRoute: CampaignsIndexRoute,
 }
 export const routeTree = rootRouteImport
