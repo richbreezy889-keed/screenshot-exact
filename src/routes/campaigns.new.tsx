@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Check, CheckCircle2, Lock } from "lucide-react";
+import { Check, CheckCircle2, Lock, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { estimateViews, fundCampaign } from "@/lib/api";
+import { creatorCap, estimateViews, fundCampaign } from "@/lib/api";
+import { MIN_RATE_PER_1K } from "@/data/config";
 import { useApp, type TKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { MoneyText, Panel, ViewsText } from "@/components/biboh/primitives";
@@ -81,8 +82,8 @@ function Wizard() {
 
   const valid = [
     f.title.trim() && f.description.trim() && f.platforms.length > 0,
-    f.budget > 0 && f.rate > 0 && f.deadline,
-    f.creators > 0,
+    f.budget > 0 && f.rate >= MIN_RATE_PER_1K && f.creators >= 1 && f.deadline,
+    true,
     true,
   ];
   const req = t("required");
@@ -166,20 +167,32 @@ function Wizard() {
 
         {step === 1 && (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <Field label={t("totalBudget")} error={tried && f.budget <= 0 ? req : undefined}>
                 <input type="number" min={0} step={50000} className={cn(field, "tnum")} value={f.budget} onChange={(e) => set("budget", Number(e.target.value))} />
               </Field>
-              <Field label={t("rateInput")} error={tried && f.rate <= 0 ? req : undefined}>
-                <input type="number" min={0} step={100} className={cn(field, "tnum")} value={f.rate} onChange={(e) => set("rate", Number(e.target.value))} />
+              <Field label={t("rateInput")}>
+                <input type="number" min={MIN_RATE_PER_1K} step={100} className={cn(field, "tnum")} value={f.rate} onChange={(e) => set("rate", Number(e.target.value))} aria-describedby="rate-msg" />
+              </Field>
+              <Field label={t("creatorsNeeded")} error={f.creators < 1 ? t("minOne") : undefined}>
+                <input type="number" min={1} className={cn(field, "tnum")} value={f.creators} onChange={(e) => set("creators", Math.floor(Number(e.target.value)))} />
               </Field>
             </div>
+            {f.rate < MIN_RATE_PER_1K && (
+              <p id="rate-msg" role="alert" className="rounded-xl border border-warning/50 bg-warning/10 p-3 text-sm">
+                {t("minRateMsg")} <MoneyText value={MIN_RATE_PER_1K} className="font-semibold" /> {t("minRateMsg2")}
+              </p>
+            )}
             <Field label={t("deadline")}>
               <input type="date" className={field} value={f.deadline} onChange={(e) => set("deadline", e.target.value)} />
             </Field>
             <div className="rounded-2xl bg-gradient-brand p-5 text-primary-foreground" aria-live="polite">
               <p className="text-sm opacity-90">{t("estimate")}</p>
               <p className="font-display text-3xl font-bold"><ViewsText value={estimateViews(f.budget, f.rate)} /> <span className="text-base font-medium">{t("verifiedViewsLower")}</span></p>
+            </div>
+            <div className="rounded-2xl border bg-secondary p-5" aria-live="polite">
+              <p className="text-sm">{t("eachCanEarn")} <MoneyText value={creatorCap(f.budget, f.creators)} className="font-display text-lg font-bold text-accent" /></p>
+              <p className="mt-1 text-sm text-muted-foreground">{t("viewsPerCreator1")} <ViewsText value={estimateViews(creatorCap(f.budget, f.creators), f.rate)} className="font-semibold text-foreground" /> {t("viewsPerCreator2")}</p>
             </div>
           </>
         )}
@@ -192,10 +205,7 @@ function Wizard() {
                 {lengths.map((l) => <Chip key={l} active={f.length === l} onClick={() => set("length", l)}>{l}</Chip>)}
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={t("numCreators")} error={tried && f.creators <= 0 ? req : undefined}>
-                <input type="number" min={1} className={cn(field, "tnum")} value={f.creators} onChange={(e) => set("creators", Number(e.target.value))} />
-              </Field>
+            <div>
               <Field label={t("minFollowers")}>
                 <input type="number" min={0} step={1000} className={cn(field, "tnum")} value={f.minFollowers} onChange={(e) => set("minFollowers", Number(e.target.value))} />
               </Field>
@@ -219,7 +229,8 @@ function Wizard() {
                 [t("ratePer1k"), <MoneyText key="r" value={f.rate} />],
                 [t("verifiedViews"), <ViewsText key="v" value={estimateViews(f.budget, f.rate)} />],
                 [t("deadline"), f.deadline],
-                [t("numCreators"), f.creators],
+                [t("creatorsNeeded"), f.creators],
+                [t("eachCanEarn"), <MoneyText key="cap" value={creatorCap(f.budget, f.creators)} />],
                 [t("location"), f.location],
                 [t("minFollowers"), <ViewsText key="m" value={f.minFollowers} />],
               ].map(([k, v], i) => (
@@ -242,7 +253,10 @@ function Wizard() {
                 ))}
               </div>
             </div>
-            <p className="flex items-start gap-2 text-sm text-muted-foreground"><Lock className="mt-0.5 h-4 w-4 shrink-0 text-success" />{t("escrow")}</p>
+            <div className="space-y-2 rounded-2xl border p-4 text-sm text-muted-foreground">
+              <p className="flex items-start gap-2"><Percent className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{t("feeNote")}</p>
+              <p className="flex items-start gap-2"><Lock className="mt-0.5 h-4 w-4 shrink-0 text-success" />{t("escrowFull")}</p>
+            </div>
           </>
         )}
       </Panel>
