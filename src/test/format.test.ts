@@ -14,3 +14,20 @@ describe("formatting rules", () => {
     expect(estimateViews(5_000_000, 5000)).toBe(1_000_000);
   });
 });
+
+import { creatorCap, creatorEarnings, feeSplit } from "@/lib/api";
+import { MIN_RATE_PER_1K } from "@/data/config";
+describe("creator payout rules", () => {
+  it("splits budget equally per creator, rounded down", () => {
+    expect(creatorCap(1_000_000, 3)).toBe(333_333);
+  });
+  it("caps earnings at the creator's share", () => {
+    expect(creatorEarnings(1_000_000, 4000, 500_000)).toBe(500_000);
+  });
+  it("Biboh keeps 15% of payout", () => {
+    expect(feeSplit(100_000)).toEqual({ fee: 15_000, net: 85_000 });
+  });
+  it("min rate placeholder is 2,000 TZS", () => {
+    expect(MIN_RATE_PER_1K).toBe(2000);
+  });
+});

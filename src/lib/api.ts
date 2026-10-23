@@ -1,4 +1,5 @@
 // Mock data access layer. Swap these bodies for real database calls later.
+import { creators as allCreators } from "@/data/creators";
 import { campaigns, type Campaign, type CampaignStatus } from "@/data/campaigns";
 import { creators } from "@/data/creators";
 import { attentionItems, dailySeries } from "@/data/dashboard";
@@ -54,4 +55,45 @@ export function estimateViews(budget: number, ratePer1k: number) {
 export async function fundCampaign(_input: Record<string, unknown>) {
   await delay(900);
   return { id: `c${Date.now()}` };
+}
+
+// ---- Campaign detail ----
+import { campaignDetails, type LedgerEntry } from "@/data/campaignDetail";
+import { PLATFORM_FEE } from "@/data/config";
+
+/** Max a single creator can earn: budget split equally across slots, rounded down. */
+export function creatorCap(budget: number, creatorsNeeded: number) {
+  if (budget <= 0 || creatorsNeeded < 1) return 0;
+  return Math.floor(budget / creatorsNeeded);
+}
+
+/** Earnings before fee for a creator, capped at their share. */
+export function creatorEarnings(views: number, ratePer1k: number, cap: number) {
+  return Math.min(Math.floor((views / 1000) * ratePer1k), cap);
+}
+
+export function feeSplit(gross: number) {
+  const fee = Math.round(gross * PLATFORM_FEE);
+  return { fee, net: gross - fee };
+}
+
+export async function getCampaign(id: string) {
+  await delay();
+  const c = campaigns.find((x) => x.id === id);
+  if (!c) throw new Error("not-found");
+  const detail = campaignDetails[id] ?? { applicants: [], submissions: [], results: [], viewsOverTime: [] };
+  const cap = creatorCap(c.budget, c.creatorsNeeded);
+  const gross = detail.results.reduce((s, r) => s + creatorEarnings(r.views, c.ratePer1k, cap), 0);
+  const { fee, net } = feeSplit(gross);
+  const ledger: LedgerEntry[] = [{ id: "l1", kind: "funded", date: "2026-10-01", amount: c.budget }];
+  if (gross > 0) {
+    ledger.push({ id: "l2", kind: "paidOut", date: "2026-10-20", amount: net });
+    ledger.push({ id: "l3", kind: "fee", date: "2026-10-20", amount: fee });
+  }
+  if (c.status === "completed") ledger.push({ id: "l4", kind: "returned", date: c.deadline, amount: c.budget - c.spent });
+  return { campaign: c, detail, ledger, cap };
+}
+
+export function getCreatorById(id: string) {
+  return allCreators.find((c) => c.id === id);
 }
