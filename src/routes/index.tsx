@@ -65,7 +65,7 @@ function Dashboard() {
               <Skeleton className="h-full rounded-xl bg-secondary" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={series.data} margin={{ left: 0, right: 8 }}>
+                <AreaChart data={series.data ?? []} margin={{ left: 0, right: 8 }}>
                   <defs>
                     <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.5} />
