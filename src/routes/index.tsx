@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { CheckCircle2, Eye, Megaphone, Plus, ShieldCheck, UserPlus, Wallet, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { attentionTab } from "@/data/dashboard";
 import { getActiveCampaigns, getAttentionItems, getDailySeries, getStats } from "@/lib/api";
 import { useApp } from "@/lib/i18n";
 import { formatTZS, formatViews } from "@/lib/format";
@@ -101,7 +102,7 @@ function Dashboard() {
                   const Icon = icons[a.kind];
                   return (
                     <li key={a.id}>
-                      <button className="flex w-full items-center gap-3 rounded-xl bg-secondary p-3 text-left hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <Link to="/campaigns/$id" params={{ id: a.campaignId }} search={{ tab: attentionTab[a.kind] }} className="flex w-full items-center gap-3 rounded-xl bg-secondary p-3 text-left hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                         <span className="rounded-lg bg-accent/15 p-2 text-accent"><Icon className="h-4 w-4" aria-hidden /></span>
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-medium">
@@ -110,7 +111,7 @@ function Dashboard() {
                           <span className="block truncate text-xs text-muted-foreground">{a.campaign}{a.creator && ` · ${a.creator}`}</span>
                         </span>
                         <span className="text-xs font-semibold text-primary">{t("review")}</span>
-                      </button>
+                      </Link>
                     </li>
                   );
                 })}
@@ -132,7 +133,7 @@ function Dashboard() {
                 <li key={c.id} className="grid gap-3 py-4 md:grid-cols-[1fr_1.4fr] md:items-center md:gap-8">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-medium">{c.title}</p>
+                      <Link to="/campaigns/$id" params={{ id: c.id }} className="font-medium hover:text-primary hover:underline">{c.title}</Link>
                       <p className="text-xs text-muted-foreground">{c.brand} · <ViewsText value={c.views} /> {t("views").toLowerCase()}</p>
                     </div>
                     <StatusBadge status={c.status} />

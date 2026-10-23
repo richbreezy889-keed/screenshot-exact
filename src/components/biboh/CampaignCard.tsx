@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { CalendarDays, Users } from "lucide-react";
 import type { Campaign } from "@/data/campaigns";
 import { useApp } from "@/lib/i18n";
@@ -7,7 +8,8 @@ import { MoneyText, StatusBadge } from "./primitives";
 export function CampaignCard({ c }: { c: Campaign }) {
   const { t, lang } = useApp();
   return (
-    <article className="group rounded-2xl border bg-card p-5 shadow-soft hover:-translate-y-0.5 hover:border-primary/60 focus-within:ring-2 focus-within:ring-ring">
+    <Link to="/campaigns/$id" params={{ id: c.id }} className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <article className="group rounded-2xl border bg-card p-5 shadow-soft hover:-translate-y-0.5 hover:border-primary/60 ">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs text-muted-foreground">{c.brand} · {c.platforms.join(" + ")}</p>
@@ -34,5 +36,6 @@ export function CampaignCard({ c }: { c: Campaign }) {
         </div>
       </dl>
     </article>
+    </Link>
   );
 }
