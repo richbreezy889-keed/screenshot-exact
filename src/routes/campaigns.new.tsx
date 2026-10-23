@@ -29,7 +29,7 @@ const payments = ["M-Pesa", "Mixx by Yas", "Airtel Money", "Card"];
 
 const field = "mt-1.5 w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-function Field({ label, children, error }: { label: string; children: ReactNode; error?: string }) {
+function Field({ label, children, error }: { label: string; children: ReactNode; error?: string | undefined }) {
   return (
     <label className="block text-sm font-medium">
       {label}
