@@ -50,10 +50,10 @@ function Dashboard() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl bg-secondary" />)
         ) : (
           <>
-            <StatCard hero label={t("totalSpend")} value={<MoneyText value={stats.data.spend} />} icon={<Wallet className="h-4 w-4" />} />
+            <StatCard hero label={t("totalSpend")} value={<MoneyText smallPrefix value={stats.data.spend} />} icon={<Wallet className="h-4 w-4" />} />
             <StatCard label={t("verifiedViews")} value={<ViewsText value={stats.data.views} />} icon={<Eye className="h-4 w-4" />} />
             <StatCard label={t("activeCampaigns")} value={stats.data.active} icon={<Megaphone className="h-4 w-4" />} />
-            <StatCard label={t("avgCpm")} value={<MoneyText value={stats.data.avgCpm} />} icon={<Gauge className="h-4 w-4" />} />
+            <StatCard label={t("avgCpm")} value={<MoneyText smallPrefix value={stats.data.avgCpm} />} icon={<Gauge className="h-4 w-4" />} />
           </>
         )}
       </div>

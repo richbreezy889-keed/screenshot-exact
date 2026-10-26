@@ -7,7 +7,14 @@ import type { CampaignStatus } from "@/data/campaigns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function MoneyText({ value, className }: { value: number; className?: string }) {
+export function MoneyText({ value, className, smallPrefix }: { value: number; className?: string; smallPrefix?: boolean }) {
+  if (smallPrefix)
+    return (
+      <span className={cn("tnum whitespace-nowrap", className)}>
+        <span className="mr-1 align-baseline text-[0.5em] font-semibold opacity-80">TZS</span>
+        {Math.round(value).toLocaleString("en-US")}
+      </span>
+    );
   return <span className={cn("tnum", className)}>{formatTZS(value)}</span>;
 }
 
@@ -47,7 +54,7 @@ export function StatCard({ label, value, icon, hero }: { label: string; value: R
         <p className={cn("text-sm", hero ? "opacity-90" : "text-muted-foreground")}>{label}</p>
         <span className={cn("rounded-xl p-2", hero ? "bg-background/20" : "bg-secondary text-accent")}>{icon}</span>
       </div>
-      <p className="mt-3 font-display text-2xl font-bold tnum md:text-3xl">{value}</p>
+      <p className="mt-3 truncate whitespace-nowrap font-display text-xl font-bold tnum sm:text-2xl xl:text-3xl">{value}</p>
     </div>
   );
 }
