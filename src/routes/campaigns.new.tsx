@@ -7,6 +7,19 @@ import { MIN_RATE_PER_1K } from "@/data/config";
 import { useApp, type TKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { MoneyText, Panel, ViewsText } from "@/components/biboh/primitives";
+import { formatTZS } from "@/lib/format";
+
+function NumInput({ value, onChange, ...rest }: { value: number; onChange: (n: number) => void; className?: string; "aria-describedby"?: string }) {
+  return (
+    <input
+      {...rest}
+      type="text"
+      inputMode="numeric"
+      value={value ? value.toLocaleString("en-US") : ""}
+      onChange={(e) => onChange(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+    />
+  );
+}
 
 export const Route = createFileRoute("/campaigns/new")({
   head: () => ({
@@ -24,7 +37,7 @@ export const Route = createFileRoute("/campaigns/new")({
 
 const steps: TKey[] = ["stepBrief", "stepBudget", "stepReq", "stepReview"];
 const niches = ["food", "fashion", "beauty", "comedy", "tech"];
-const locations = ["Any", "Dar es Salaam", "Arusha", "Mwanza", "Dodoma"];
+const locations = ["Anywhere in Tanzania", "Dar es Salaam", "Arusha", "Mwanza", "Dodoma"];
 const lengths = ["15–30s", "30–60s", "60–90s"];
 const payments = ["M-Pesa", "Mixx by Yas", "Airtel Money", "Card"];
 
@@ -169,10 +182,11 @@ function Wizard() {
           <>
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label={t("totalBudget")} error={tried && f.budget <= 0 ? req : undefined}>
-                <input type="number" min={0} step={50000} className={cn(field, "tnum")} value={f.budget} onChange={(e) => set("budget", Number(e.target.value))} />
+                <NumInput className={cn(field, "tnum")} value={f.budget} onChange={(n) => set("budget", n)} />
               </Field>
               <Field label={t("rateInput")}>
-                <input type="number" min={MIN_RATE_PER_1K} step={100} className={cn(field, "tnum")} value={f.rate} onChange={(e) => set("rate", Number(e.target.value))} aria-describedby="rate-msg" />
+                <NumInput className={cn(field, "tnum")} value={f.rate} onChange={(n) => set("rate", n)} aria-describedby="rate-help rate-msg" />
+                <p id="rate-help" className="mt-1 text-xs text-muted-foreground">Minimum rate: {formatTZS(MIN_RATE_PER_1K)} per 1,000 views</p>
               </Field>
               <Field label={t("creatorsNeeded")} error={f.creators < 1 ? t("minOne") : undefined}>
                 <input type="number" min={1} className={cn(field, "tnum")} value={f.creators} onChange={(e) => set("creators", Math.floor(Number(e.target.value)))} />
@@ -207,7 +221,7 @@ function Wizard() {
             </div>
             <div>
               <Field label={t("minFollowers")}>
-                <input type="number" min={0} step={1000} className={cn(field, "tnum")} value={f.minFollowers} onChange={(e) => set("minFollowers", Number(e.target.value))} />
+                <NumInput className={cn(field, "tnum")} value={f.minFollowers} onChange={(n) => set("minFollowers", n)} />
               </Field>
             </div>
             <Field label={t("location")}>
