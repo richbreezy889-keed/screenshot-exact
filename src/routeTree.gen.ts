@@ -14,6 +14,7 @@ import { Route as CreatorsRouteImport } from './routes/creators'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as CampaignsIndexRouteImport } from './routes/campaigns.index'
+import { Route as CampaignsIdRouteImport } from './routes/campaigns.$id'
 import { Route as CampaignsNewRouteImport } from './routes/campaigns.new'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const CampaignsIndexRoute = CampaignsIndexRouteImport.update({
   path: '/campaigns/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampaignsIdRoute = CampaignsIdRouteImport.update({
+  id: '/campaigns/$id',
+  path: '/campaigns/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CampaignsNewRoute = CampaignsNewRouteImport.update({
   id: '/campaigns/new',
   path: '/campaigns/new',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/creators': typeof CreatorsRoute
   '/settings': typeof SettingsRoute
   '/wallet': typeof WalletRoute
+  '/campaigns/$id': typeof CampaignsIdRoute
   '/campaigns/new': typeof CampaignsNewRoute
   '/campaigns/': typeof CampaignsIndexRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/creators': typeof CreatorsRoute
   '/settings': typeof SettingsRoute
   '/wallet': typeof WalletRoute
+  '/campaigns/$id': typeof CampaignsIdRoute
   '/campaigns/new': typeof CampaignsNewRoute
   '/campaigns': typeof CampaignsIndexRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/creators': typeof CreatorsRoute
   '/settings': typeof SettingsRoute
   '/wallet': typeof WalletRoute
+  '/campaigns/$id': typeof CampaignsIdRoute
   '/campaigns/new': typeof CampaignsNewRoute
   '/campaigns/': typeof CampaignsIndexRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/creators'
     | '/settings'
     | '/wallet'
+    | '/campaigns/$id'
     | '/campaigns/new'
     | '/campaigns/'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/creators'
     | '/settings'
     | '/wallet'
+    | '/campaigns/$id'
     | '/campaigns/new'
     | '/campaigns'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/creators'
     | '/settings'
     | '/wallet'
+    | '/campaigns/$id'
     | '/campaigns/new'
     | '/campaigns/'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   CreatorsRoute: typeof CreatorsRoute
   SettingsRoute: typeof SettingsRoute
   WalletRoute: typeof WalletRoute
+  CampaignsIdRoute: typeof CampaignsIdRoute
   CampaignsNewRoute: typeof CampaignsNewRoute
   CampaignsIndexRoute: typeof CampaignsIndexRoute
 }
@@ -145,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CampaignsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campaigns/$id': {
+      id: '/campaigns/$id'
+      path: '/campaigns/$id'
+      fullPath: '/campaigns/$id'
+      preLoaderRoute: typeof CampaignsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/campaigns/new': {
       id: '/campaigns/new'
       path: '/campaigns/new'
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   CreatorsRoute: CreatorsRoute,
   SettingsRoute: SettingsRoute,
   WalletRoute: WalletRoute,
+  CampaignsIdRoute: CampaignsIdRoute,
   CampaignsNewRoute: CampaignsNewRoute,
   CampaignsIndexRoute: CampaignsIndexRoute,
 }
