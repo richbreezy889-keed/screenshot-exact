@@ -36,7 +36,7 @@ function CreatorsPage() {
                 <h3 className="font-semibold">{c.name}</h3>
                 <p className="text-xs text-muted-foreground">{c.handle} · <span className="capitalize">{c.niche}</span></p>
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" aria-hidden />{c.location}</p>
-                <p className="mt-2 text-sm"><ViewsText value={c.followers} className="font-semibold text-accent" /> {t("followers")} · <ViewsText value={c.avgViews} className="font-semibold" /> {t("avgViews")}</p>
+                <p className="mt-2 text-sm"><ViewsText value={c.followers.tiktok + c.followers.instagram} className="font-semibold text-accent" /> {t("followers")} · <ViewsText value={c.avgViews} className="font-semibold" /> {t("avgViews")}</p>
               </div>
             </article>
           ))}
