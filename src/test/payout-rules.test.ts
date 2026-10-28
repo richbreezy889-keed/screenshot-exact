@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { canApproveMore, countApproved, creatorCap, creatorEarnings, feeSplit } from "@/lib/api";
+import {
+  canApproveMore,
+  computeStats,
+  countApproved,
+  creatorCap,
+  creatorEarnings,
+  feeSplit,
+} from "@/lib/api";
 import { campaigns } from "@/data/campaigns";
 import { campaignDetails, type Applicant, type ApplicantStatus } from "@/data/campaignDetail";
 import { creators } from "@/data/creators";
@@ -108,5 +115,74 @@ describe("approved count derivation", () => {
         seen.add(applicant.creatorId);
       }
     }
+  });
+});
+
+/** Gross = every result row paid at the campaign rate, clamped to the creator's share. */
+function campaignGross(campaign: (typeof campaigns)[number]) {
+  const cap = creatorCap(campaign.budget, campaign.creatorsNeeded);
+  const detail = campaignDetails[campaign.id];
+  const rows = (detail?.results ?? []).map((r) => ({
+    ...r,
+    uncapped: Math.floor((r.views / 1000) * campaign.ratePer1k),
+    paid: creatorEarnings(r.views, campaign.ratePer1k, cap),
+  }));
+  return {
+    cap,
+    rows,
+    gross: rows.reduce((sum, r) => sum + r.paid, 0),
+    views: rows.reduce((sum, r) => sum + r.views, 0),
+    atCap: rows.filter((r) => r.uncapped >= cap).length,
+  };
+}
+
+describe("campaign money consistency", () => {
+  it("spent equals the creators' earnings before fee from the results", () => {
+    for (const campaign of campaigns) {
+      const { gross } = campaignGross(campaign);
+      expect(campaign.spent, `${campaign.id} spent`).toBe(gross);
+    }
+  });
+
+  it("verified views equal the sum of result views", () => {
+    for (const campaign of campaigns) {
+      const { views } = campaignGross(campaign);
+      expect(campaign.views, `${campaign.id} views`).toBe(views);
+    }
+  });
+
+  it("only one or two creators reach their share cap per campaign", () => {
+    for (const campaign of campaigns) {
+      const { rows, atCap } = campaignGross(campaign);
+      expect(atCap, `${campaign.id} creators at cap`).toBeLessThanOrEqual(2);
+      if (rows.length > 1) {
+        expect(atCap, `${campaign.id} creators below cap`).toBeLessThan(rows.length);
+      }
+    }
+  });
+
+  it("pays only creators approved for that campaign", () => {
+    for (const campaign of campaigns) {
+      const detail = campaignDetails[campaign.id];
+      const approved = new Set(
+        (detail?.applicants ?? []).filter((a) => a.status === "approved").map((a) => a.creatorId),
+      );
+      for (const result of detail?.results ?? []) {
+        expect(approved.has(result.creatorId), `${campaign.id} → ${result.creatorId}`).toBe(true);
+      }
+    }
+  });
+
+  it("keeps dashboard totals derived from the campaign data", () => {
+    const stats = computeStats(campaigns);
+    const spent = campaigns.reduce((sum, c) => sum + c.spent, 0);
+    const views = campaigns.reduce((sum, c) => sum + c.views, 0);
+    const gross = campaigns.reduce((sum, c) => sum + campaignGross(c).gross, 0);
+
+    expect(stats.spend).toBe(spent);
+    expect(stats.views).toBe(views);
+    expect(stats.avgCpm).toBe(views ? Math.round((spent / views) * 1000) : 0);
+    // Total spend must be the money actually paid to creators, not a separate figure.
+    expect(stats.spend).toBe(gross);
   });
 });
