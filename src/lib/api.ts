@@ -58,8 +58,18 @@ export async function fundCampaign(_input: Record<string, unknown>) {
 }
 
 // ---- Campaign detail ----
-import { campaignDetails, type LedgerEntry } from "@/data/campaignDetail";
+import { campaignDetails, type Applicant, type LedgerEntry } from "@/data/campaignDetail";
 import { PLATFORM_FEE } from "@/data/config";
+
+/** Number of applicants with status "approved" — the source of truth for the header count. */
+export function countApproved(applicants: Applicant[]) {
+  return applicants.filter((a) => a.status === "approved").length;
+}
+
+/** Whether another applicant can be approved without exceeding the campaign's slots. */
+export function canApproveMore(approved: number, creatorsNeeded: number) {
+  return approved < creatorsNeeded;
+}
 
 /** Max a single creator can earn: budget split equally across slots, rounded down. */
 export function creatorCap(budget: number, creatorsNeeded: number) {
@@ -81,17 +91,26 @@ export async function getCampaign(id: string) {
   await delay();
   const c = campaigns.find((x) => x.id === id);
   if (!c) throw new Error("not-found");
-  const detail = campaignDetails[id] ?? { applicants: [], submissions: [], results: [], viewsOverTime: [] };
+  const detail = campaignDetails[id] ?? {
+    applicants: [],
+    submissions: [],
+    results: [],
+    viewsOverTime: [],
+  };
+  const approved = countApproved(detail.applicants);
   const cap = creatorCap(c.budget, c.creatorsNeeded);
   const gross = detail.results.reduce((s, r) => s + creatorEarnings(r.views, c.ratePer1k, cap), 0);
   const { fee, net } = feeSplit(gross);
-  const ledger: LedgerEntry[] = [{ id: "l1", kind: "funded", date: "2026-10-01", amount: c.budget }];
+  const ledger: LedgerEntry[] = [
+    { id: "l1", kind: "funded", date: "2026-10-01", amount: c.budget },
+  ];
   if (gross > 0) {
     ledger.push({ id: "l2", kind: "paidOut", date: "2026-10-20", amount: net });
     ledger.push({ id: "l3", kind: "fee", date: "2026-10-20", amount: fee });
   }
-  if (c.status === "completed") ledger.push({ id: "l4", kind: "returned", date: c.deadline, amount: c.budget - c.spent });
-  return { campaign: c, detail, ledger, cap };
+  if (c.status === "completed")
+    ledger.push({ id: "l4", kind: "returned", date: c.deadline, amount: c.budget - c.spent });
+  return { campaign: c, detail, ledger, cap, approved };
 }
 
 export function getCreatorById(id: string) {

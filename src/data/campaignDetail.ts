@@ -2,10 +2,28 @@ export type SubmissionStatus = "awaiting" | "revision" | "approved";
 export type ApplicantStatus = "pending" | "approved" | "declined";
 export type LedgerKind = "funded" | "paidOut" | "fee" | "returned";
 
-export interface Applicant { creatorId: string; status: ApplicantStatus }
-export interface Submission { id: string; creatorId: string; submitted: string; status: SubmissionStatus; note?: string }
-export interface ResultRow { creatorId: string; postUrl: string; views: number }
-export interface LedgerEntry { id: string; kind: LedgerKind; date: string; amount: number }
+export interface Applicant {
+  creatorId: string;
+  status: ApplicantStatus;
+}
+export interface Submission {
+  id: string;
+  creatorId: string;
+  submitted: string;
+  status: SubmissionStatus;
+  note?: string;
+}
+export interface ResultRow {
+  creatorId: string;
+  postUrl: string;
+  views: number;
+}
+export interface LedgerEntry {
+  id: string;
+  kind: LedgerKind;
+  date: string;
+  amount: number;
+}
 
 export interface CampaignDetailData {
   applicants: Applicant[];
@@ -15,14 +33,21 @@ export interface CampaignDetailData {
 }
 
 // Per-campaign mock detail. Campaigns not listed get empty detail.
+// The number of applicants with status "approved" must equal the campaign's
+// creatorsApproved value in src/data/campaigns.ts — see payout-rules.test.ts.
 export const campaignDetails: Record<string, CampaignDetailData> = {
   c1: {
     applicants: [
       { creatorId: "u1", status: "approved" },
-      { creatorId: "u8", status: "pending" },
-      { creatorId: "u6", status: "pending" },
-      { creatorId: "u9", status: "pending" },
       { creatorId: "u4", status: "approved" },
+      { creatorId: "u8", status: "approved" },
+      { creatorId: "u10", status: "approved" },
+      { creatorId: "u11", status: "approved" },
+      { creatorId: "u12", status: "approved" },
+      { creatorId: "u13", status: "approved" },
+      { creatorId: "u14", status: "approved" },
+      { creatorId: "u9", status: "pending" },
+      { creatorId: "u15", status: "pending" },
     ],
     submissions: [
       { id: "s1", creatorId: "u1", submitted: "2026-10-18", status: "awaiting" },
@@ -39,24 +64,41 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
   c2: {
     applicants: [
       { creatorId: "u3", status: "approved" },
-      { creatorId: "u7", status: "pending" },
+      { creatorId: "u7", status: "approved" },
+      { creatorId: "u16", status: "approved" },
+      { creatorId: "u17", status: "approved" },
+      { creatorId: "u18", status: "approved" },
       { creatorId: "u5", status: "pending" },
-      { creatorId: "u9", status: "pending" },
-      { creatorId: "u2", status: "pending" },
-      { creatorId: "u8", status: "pending" },
-      { creatorId: "u6", status: "pending" },
     ],
     submissions: [
       { id: "s5", creatorId: "u3", submitted: "2026-10-21", status: "awaiting" },
-      { id: "s6", creatorId: "u3", submitted: "2026-10-10", status: "revision", note: "Please show the coffee bag label clearly." },
+      {
+        id: "s6",
+        creatorId: "u3",
+        submitted: "2026-10-10",
+        status: "revision",
+        note: "Please show the coffee bag label clearly.",
+      },
     ],
-    results: [{ creatorId: "u3", postUrl: "https://tiktok.com/@jumakula/video/7350", views: 300_000 }],
+    results: [
+      { creatorId: "u3", postUrl: "https://tiktok.com/@jumakula/video/7350", views: 300_000 },
+    ],
     viewsOverTime: series(300_000),
   },
   c3: {
     applicants: [
       { creatorId: "u2", status: "approved" },
       { creatorId: "u6", status: "approved" },
+      { creatorId: "u21", status: "approved" },
+      { creatorId: "u22", status: "approved" },
+      { creatorId: "u23", status: "approved" },
+      { creatorId: "u24", status: "approved" },
+      { creatorId: "u25", status: "approved" },
+      { creatorId: "u26", status: "approved" },
+      { creatorId: "u27", status: "approved" },
+      { creatorId: "u28", status: "approved" },
+      { creatorId: "u29", status: "approved" },
+      { creatorId: "u30", status: "approved" },
     ],
     submissions: [
       { id: "s7", creatorId: "u2", submitted: "2026-10-05", status: "approved" },
@@ -67,6 +109,45 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
       { creatorId: "u6", postUrl: "https://tiktok.com/@zawadistyle/video/7302", views: 461_800 },
     ],
     viewsOverTime: series(810_000),
+  },
+  c4: {
+    applicants: [
+      { creatorId: "u3", status: "approved" },
+      { creatorId: "u7", status: "approved" },
+      { creatorId: "u16", status: "approved" },
+      { creatorId: "u17", status: "approved" },
+      { creatorId: "u18", status: "approved" },
+      { creatorId: "u19", status: "approved" },
+      { creatorId: "u20", status: "approved" },
+    ],
+    submissions: [
+      { id: "s9", creatorId: "u3", submitted: "2026-09-12", status: "approved" },
+      { id: "s10", creatorId: "u16", submitted: "2026-09-14", status: "approved" },
+      { id: "s11", creatorId: "u17", submitted: "2026-09-15", status: "approved" },
+    ],
+    results: [
+      { creatorId: "u3", postUrl: "https://tiktok.com/@jumakula/video/7210", views: 260_000 },
+      { creatorId: "u16", postUrl: "https://instagram.com/p/isayaeats-darbites", views: 180_000 },
+      { creatorId: "u17", postUrl: "https://instagram.com/p/lisamango-darbites", views: 120_000 },
+    ],
+    viewsOverTime: series(560_000),
+  },
+  c6: {
+    applicants: [
+      { creatorId: "u4", status: "approved" },
+      { creatorId: "u9", status: "approved" },
+      { creatorId: "u31", status: "approved" },
+      { creatorId: "u32", status: "approved" },
+    ],
+    submissions: [
+      { id: "s12", creatorId: "u4", submitted: "2026-08-10", status: "approved" },
+      { id: "s13", creatorId: "u31", submitted: "2026-08-11", status: "approved" },
+    ],
+    results: [
+      { creatorId: "u4", postUrl: "https://tiktok.com/@rehemacheka/video/7102", views: 300_000 },
+      { creatorId: "u31", postUrl: "https://tiktok.com/@bellaskits/video/7103", views: 200_000 },
+    ],
+    viewsOverTime: series(500_000),
   },
 };
 

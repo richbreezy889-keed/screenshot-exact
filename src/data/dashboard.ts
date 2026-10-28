@@ -30,8 +30,36 @@ export const attentionTab: Record<AttentionKind, "content" | "results" | "applic
 };
 
 export const attentionItems: AttentionItem[] = [
-  { id: "a1", kind: "approveVideo", campaignId: "c1", campaign: "Zuri Glow Serum Launch", creator: "Neema Mushi", count: 3 },
-  { id: "a2", kind: "verifyViews", campaignId: "c3", campaign: "Mtaani Wear Street Drop", creator: "Baraka Mwakyusa", count: 48_200 },
-  { id: "a3", kind: "applicants", campaignId: "c2", campaign: "Kilele Morning Ritual", creator: "", count: 6 },
-  { id: "a4", kind: "approveVideo", campaignId: "c2", campaign: "Kilele Morning Ritual", creator: "Juma Kassim", count: 1 },
+  {
+    id: "a1",
+    kind: "approveVideo",
+    campaignId: "c1",
+    campaign: "Zuri Glow Serum Launch",
+    creator: "Neema Mushi",
+    count: 3,
+  },
+  {
+    id: "a2",
+    kind: "verifyViews",
+    campaignId: "c3",
+    campaign: "Mtaani Wear Street Drop",
+    creator: "Baraka Mwakyusa",
+    count: 48_200,
+  },
+  {
+    id: "a3",
+    kind: "applicants",
+    campaignId: "c2",
+    campaign: "Kilele Morning Ritual",
+    creator: "",
+    count: 1,
+  },
+  {
+    id: "a4",
+    kind: "approveVideo",
+    campaignId: "c2",
+    campaign: "Kilele Morning Ritual",
+    creator: "Juma Kassim",
+    count: 1,
+  },
 ];
