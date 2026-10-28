@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { useApp } from "@/lib/i18n";
 import { formatDate, formatViews } from "@/lib/format";
+import { recentViews } from "@/lib/views";
 import {
   BudgetBar,
   ListState,
@@ -183,7 +184,11 @@ function CampaignDetail() {
                 {t("eachCanEarn")}{" "}
                 <MoneyText value={data.cap} className="font-semibold text-accent" />
               </p>
-              <BudgetBar spent={data.campaign.spent} budget={data.campaign.budget} />
+              <BudgetBar
+                spent={data.campaign.spent}
+                budget={data.campaign.budget}
+                completed={data.campaign.status === "completed"}
+              />
               <p className="text-sm" aria-live="polite">
                 <span className="font-semibold">{approved}</span> {t("approvedOf")}{" "}
                 {data.campaign.creatorsNeeded} {t("needed")}
@@ -524,6 +529,8 @@ function ResultsTab({ data }: { data: CampaignData }) {
   const totalViews = rows.reduce((sum, r) => sum + r.views, 0);
   const gross = rows.reduce((sum, r) => sum + r.earnings, 0);
   const { fee, net } = feeSplit(gross);
+  // Same slice the dashboard's "views to verify" attention item uses.
+  const pendingViews = recentViews(detail.viewsOverTime, 7);
 
   const chartConfig = {
     views: { label: t("views"), color: "var(--chart-1)" },
@@ -606,7 +613,7 @@ function ResultsTab({ data }: { data: CampaignData }) {
           </Table>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SummaryStat label={t("earningsBeforeFee")} value={<MoneyText value={gross} />} />
           <SummaryStat
             label={t("bibohFee")}
@@ -615,6 +622,10 @@ function ResultsTab({ data }: { data: CampaignData }) {
           <SummaryStat
             label={t("netToCreator")}
             value={<MoneyText value={net} className="text-success" />}
+          />
+          <SummaryStat
+            label={t("viewsToVerifyRecent")}
+            value={<ViewsText value={pendingViews} className="text-warning" />}
           />
         </div>
 

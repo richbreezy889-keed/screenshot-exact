@@ -3,6 +3,7 @@ import { attentionItems, attentionTab, dailySeries } from "@/data/dashboard";
 import { campaigns } from "@/data/campaigns";
 import { campaignDetails } from "@/data/campaignDetail";
 import { computeStats } from "@/lib/api";
+import { recentViews } from "@/lib/views";
 
 const lifetimeViews = campaigns.reduce((sum, c) => sum + c.views, 0);
 const lifetimeSpend = campaigns.reduce((sum, c) => sum + c.spent, 0);
@@ -29,11 +30,17 @@ describe("dashboard 30-day series", () => {
   it("keeps spend per 1,000 views close to the dashboard average", () => {
     const { avgCpm } = computeStats(campaigns);
     const seriesCpm = (seriesSpend / seriesViews) * 1000;
-    expect(Math.abs(seriesCpm - avgCpm)).toBeLessThan(avgCpm * 0.02);
+    expect(Math.abs(seriesCpm - avgCpm)).toBeLessThan(avgCpm * 0.01);
     for (const day of dailySeries) {
       const dayCpm = (day.spend / day.views) * 1000;
-      expect(Math.abs(dayCpm - avgCpm), `${day.date} CPM`).toBeLessThan(avgCpm * 0.02);
+      expect(Math.abs(dayCpm - avgCpm), `${day.date} CPM`).toBeLessThan(avgCpm * 0.08);
     }
+  });
+
+  it("varies the daily cost per 1,000 views around that average", () => {
+    const cpm = dailySeries.map((day) => Math.round((day.spend / day.views) * 1000));
+    expect(new Set(cpm).size).toBeGreaterThan(10);
+    expect(Math.min(...cpm)).toBeLessThan(Math.max(...cpm) - 100);
   });
 
   it("has 30 ascending days ending 22 Oct 2026 with weekday variation and a rise", () => {
@@ -64,8 +71,8 @@ describe("needs your attention", () => {
     (campaignDetails[campaignId]?.submissions ?? []).filter((s) => s.status === "awaiting").length;
   const pendingApplicants = (campaignId: string) =>
     (campaignDetails[campaignId]?.applicants ?? []).filter((a) => a.status === "pending").length;
-  const checkpointViews = (campaignId: string) =>
-    (campaignDetails[campaignId]?.results ?? []).reduce((sum, r) => sum + r.views, 0);
+  const recentCheckpointViews = (campaignId: string) =>
+    recentViews(campaignDetails[campaignId]?.viewsOverTime ?? [], 7);
 
   it("counts match what the campaign pages show", () => {
     for (const item of attentionItems) {
@@ -74,10 +81,19 @@ describe("needs your attention", () => {
           ? awaitingVideos(item.campaignId)
           : item.kind === "applicants"
             ? pendingApplicants(item.campaignId)
-            : checkpointViews(item.campaignId);
+            : recentCheckpointViews(item.campaignId);
       expect(item.count, `${item.id} count`).toBe(expected);
       expect(item.count, `${item.id} should only surface real work`).toBeGreaterThan(0);
     }
+  });
+
+  it("asks to verify only a recent slice, not the whole campaign", () => {
+    const verify = attentionItems.find((item) => item.kind === "verifyViews");
+    expect(verify).toBeDefined();
+    const campaign = campaigns.find((c) => c.id === verify?.campaignId);
+    expect(campaign).toBeDefined();
+    expect(verify?.count).toBeLessThan(campaign?.views ?? 0);
+    expect(verify?.count).toBeLessThanOrEqual(Math.round((campaign?.views ?? 0) * 0.35));
   });
 
   it("names the campaign shown on the campaign page", () => {

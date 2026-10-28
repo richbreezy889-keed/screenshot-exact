@@ -1,5 +1,6 @@
 import { campaigns } from "@/data/campaigns";
 import { campaignDetails } from "@/data/campaignDetail";
+import { recentViews } from "@/lib/views";
 
 export interface DailyPoint {
   date: string;
@@ -20,6 +21,7 @@ const lifetimeViews = campaigns.reduce((sum, c) => sum + c.views, 0);
 const lifetimeSpend = campaigns.reduce((sum, c) => sum + c.spent, 0);
 const blendedCpm = lifetimeViews ? (lifetimeSpend / lifetimeViews) * 1000 : 0;
 const targetViews = Math.round(lifetimeViews * WINDOW_SHARE);
+const targetSpend = Math.round(lifetimeSpend * WINDOW_SHARE);
 
 // Weekday lift + gentle rise toward today, so the line still looks organic.
 const weights = Array.from({ length: WINDOW_DAYS }, (_, i) => {
@@ -31,6 +33,19 @@ const weights = Array.from({ length: WINDOW_DAYS }, (_, i) => {
 });
 const weightTotal = weights.reduce((sum, w) => sum + w, 0);
 
+// Some days buy views a little cheaper and some a little dearer. The wobble is
+// deterministic and scaled back so the window still totals the same spend share.
+const cpmWeights = Array.from(
+  { length: WINDOW_DAYS },
+  (_, i) => 1 + 0.04 * Math.sin(i / 1.7 + 0.6) + 0.015 * Math.cos(i / 4.3),
+);
+const rawSpend = weights.map((weight, i) => {
+  const views = (weight / weightTotal) * targetViews;
+  return (views / 1000) * blendedCpm * (cpmWeights[i] ?? 1);
+});
+const rawSpendTotal = rawSpend.reduce((sum, value) => sum + value, 0);
+const spendScale = rawSpendTotal ? targetSpend / rawSpendTotal : 0;
+
 // Deterministic 30-day series ending 22 Oct 2026.
 export const dailySeries: DailyPoint[] = weights.map((weight, i) => {
   const date = new Date(WINDOW_END - (WINDOW_DAYS - 1 - i) * DAY_MS);
@@ -38,7 +53,7 @@ export const dailySeries: DailyPoint[] = weights.map((weight, i) => {
   return {
     date: date.toISOString().slice(0, 10),
     views,
-    spend: Math.round((views / 1000) * blendedCpm),
+    spend: Math.round((rawSpend[i] ?? 0) * spendScale),
   };
 });
 
@@ -67,8 +82,9 @@ const awaitingVideos = (id: string) =>
 const pendingApplicants = (id: string) =>
   (campaignDetails[id]?.applicants ?? []).filter((a) => a.status === "pending").length;
 
-const checkpointViews = (id: string) =>
-  (campaignDetails[id]?.results ?? []).reduce((sum, r) => sum + r.views, 0);
+// Only the most recent week of the campaign's cumulative series is waiting for
+// verification, not the whole lifetime total.
+const checkpointViews = (id: string) => recentViews(campaignDetails[id]?.viewsOverTime ?? [], 7);
 
 export const attentionItems: AttentionItem[] = [
   {
