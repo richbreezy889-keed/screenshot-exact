@@ -8,8 +8,8 @@ import { BudgetBar, ListState, MoneyText, Panel, StatusBadge } from "@/component
 type Tab = "applicants" | "content" | "results" | "payments";
 
 export const Route = createFileRoute("/campaigns/$id")({
-  validateSearch: (s: Record<string, unknown>): { tab?: Tab } => ({
-    tab: ["applicants", "content", "results", "payments"].includes(s.tab as string) ? (s.tab as Tab) : undefined,
+  validateSearch: (s: Record<string, unknown>): { tab?: Tab | undefined } => ({
+    tab: ["applicants", "content", "results", "payments"].includes(s["tab"] as string) ? (s["tab"] as Tab) : undefined,
   }),
   head: () => ({
     meta: [
