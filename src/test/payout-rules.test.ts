@@ -225,6 +225,44 @@ describe("campaign money consistency", () => {
   });
 });
 
+describe("campaign c2 checkpoint rows", () => {
+  const campaign = campaigns.find((c) => c.id === "c2");
+  if (!campaign) throw new Error("Missing campaign c2");
+
+  it("pays verified rows in full, leaves the recent post counting, and sums to gross", () => {
+    const { cap, rows, gross } = campaignRollup(campaign);
+    const byCreator = Object.fromEntries(rows.map((r) => [r.creatorId, r]));
+
+    expect(cap).toBe(500_000);
+    expect(byCreator["u3"]).toMatchObject({
+      verifiedViews: 95_000,
+      uncapped: 361_000,
+      earnings: 361_000,
+      checkpointPassed: true,
+    });
+    expect(byCreator["u16"]).toMatchObject({
+      verifiedViews: 45_000,
+      uncapped: 171_000,
+      earnings: 171_000,
+      checkpointPassed: true,
+    });
+    expect(byCreator["u7"]).toMatchObject({
+      verifiedViews: 0,
+      countingViews: 140_000,
+      uncapped: 532_000,
+      earnings: 0,
+      checkpointPassed: false,
+    });
+
+    for (const row of rows) {
+      expect(row.earnings, `${row.creatorId} capped earnings`).toBeLessThanOrEqual(cap);
+    }
+    expect(rows.reduce((sum, r) => sum + r.earnings, 0)).toBe(532_000);
+    expect(gross).toBe(532_000);
+    expect(campaign.spent).toBe(gross);
+  });
+});
+
 describe("checkpoint earnings rule", () => {
   const row = (postedAt: string, views: number) => ({
     creatorId: "u1",
