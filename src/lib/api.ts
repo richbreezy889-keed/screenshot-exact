@@ -188,6 +188,59 @@ function withTotals(campaign: Campaign): Campaign {
   return { ...campaign, spent: totals.gross, views: totals.verifiedViews };
 }
 
+export interface BudgetBreakdown {
+  budget: number;
+  /** Money already earned by verified views. */
+  spent: number;
+  /** Money held back for views still inside their checkpoint window. */
+  reserved: number;
+  /** Money that has not been earned and can return to the brand. */
+  left: number;
+}
+
+/**
+ * Splits a campaign budget into spent, reserved and left. Reserved is the
+ * uncapped value of each creator's counting views, limited to what remains of
+ * that creator's share after their verified earnings. Because every creator's
+ * spent + reserved stays within their cap, and the caps add up to at most the
+ * budget, the three parts always add back to the budget.
+ */
+export function campaignBudgetBreakdown(campaign: Campaign): BudgetBreakdown {
+  const budget = Math.max(0, campaign.budget);
+  const cap = creatorCap(campaign.budget, campaign.creatorsNeeded);
+  const rows = campaignDetails[campaign.id]?.results ?? [];
+  const verifiedByCreator = new Map<string, number>();
+  const pendingByCreator = new Map<string, number>();
+  let spent = 0;
+
+  for (const row of rows) {
+    const result = checkpointResult(row, campaign.ratePer1k, cap);
+    if (result.checkpointPassed) {
+      spent += result.earnings;
+      verifiedByCreator.set(
+        row.creatorId,
+        (verifiedByCreator.get(row.creatorId) ?? 0) + result.earnings,
+      );
+    } else {
+      const uncapped = Math.floor((result.countingViews / 1000) * campaign.ratePer1k);
+      pendingByCreator.set(row.creatorId, (pendingByCreator.get(row.creatorId) ?? 0) + uncapped);
+    }
+  }
+
+  let reserved = 0;
+  for (const [creatorId, pending] of pendingByCreator) {
+    const remaining = Math.max(0, cap - (verifiedByCreator.get(creatorId) ?? 0));
+    reserved += Math.min(pending, remaining);
+  }
+
+  return {
+    budget,
+    spent,
+    reserved,
+    left: Math.max(0, budget - spent - reserved),
+  };
+}
+
 /** Funds still held for a campaign: funded minus creator payouts, fee and refunds. */
 export function escrowBalance(ledger: LedgerEntry[]) {
   const balance = ledger.reduce((sum, entry) => {
@@ -231,7 +284,7 @@ export async function getCampaign(id: string) {
       date: campaign.deadline,
       amount: campaign.budget - totals.gross,
     });
-  return { campaign, detail, ledger, cap, approved };
+  return { campaign, detail, ledger, cap, approved, budget: campaignBudgetBreakdown(base) };
 }
 
 export function getCreatorById(id: string) {

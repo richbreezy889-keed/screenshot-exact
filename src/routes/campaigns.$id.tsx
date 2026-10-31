@@ -55,7 +55,6 @@ import type {
   Applicant,
   ApplicantStatus,
   CampaignDetailData,
-  LedgerEntry,
   LedgerKind,
   Submission,
   SubmissionStatus,
@@ -186,9 +185,11 @@ function CampaignDetail() {
                 <MoneyText value={data.cap} className="font-semibold text-accent" />
               </p>
               <BudgetBar
-                spent={data.campaign.spent}
-                budget={data.campaign.budget}
+                spent={data.budget.spent}
+                reserved={data.budget.reserved}
+                budget={data.budget.budget}
                 completed={data.campaign.status === "completed"}
+                split
               />
               <p className="text-sm" aria-live="polite">
                 <span className="font-semibold">{approved}</span> {t("approvedOf")}{" "}
@@ -282,7 +283,7 @@ function CampaignDetail() {
                 </TabsContent>
 
                 <TabsContent value="payments" className="space-y-4 pt-4">
-                  <PaymentsTab ledger={data.ledger} />
+                  <PaymentsTab data={data} />
                 </TabsContent>
               </Tabs>
             </Panel>
@@ -747,8 +748,9 @@ const ledgerSign: Record<LedgerKind, string> = {
   returned: "+",
 };
 
-function PaymentsTab({ ledger }: { ledger: LedgerEntry[] }) {
+function PaymentsTab({ data }: { data: CampaignData }) {
   const { t, lang } = useApp();
+  const { ledger, budget, campaign } = data;
   const inEscrow = escrowBalance(ledger);
   // Newest first; entries on the same date keep reverse insertion order.
   const sorted = [...ledger].sort((a, b) =>
@@ -767,6 +769,16 @@ function PaymentsTab({ ledger }: { ledger: LedgerEntry[] }) {
           label={t("inEscrow")}
           value={<MoneyText value={inEscrow} className="text-success" />}
         />
+        <div className="rounded-2xl border bg-secondary/40 p-4">
+          <p className="mb-2 text-xs text-muted-foreground">{t("budget")}</p>
+          <BudgetBar
+            spent={budget.spent}
+            reserved={budget.reserved}
+            budget={budget.budget}
+            completed={campaign.status === "completed"}
+            split
+          />
+        </div>
         <h3 className="font-semibold">{t("ledger")}</h3>
         <div className="overflow-hidden rounded-2xl border">
           <Table>

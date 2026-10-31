@@ -94,35 +94,57 @@ export function StatCard({
 
 export function BudgetBar({
   spent,
+  reserved = 0,
   budget,
   completed,
+  split = false,
 }: {
   spent: number;
+  reserved?: number;
   budget: number;
   completed?: boolean;
+  split?: boolean;
 }) {
   const { t } = useApp();
-  const pct = budget ? Math.min(100, (spent / budget) * 100) : 0;
+  const spentPct = budget ? Math.min(100, (spent / budget) * 100) : 0;
+  const reservedPct = budget ? Math.min(100 - spentPct, (reserved / budget) * 100) : 0;
+  const left = Math.max(0, budget - spent - reserved);
   return (
     <div>
       <div
-        className="h-2 overflow-hidden rounded-full bg-secondary"
+        className="flex h-2 overflow-hidden rounded-full bg-secondary"
         role="progressbar"
-        aria-valuenow={Math.round(pct)}
+        aria-valuenow={Math.round(spentPct + reservedPct)}
         aria-valuemin={0}
         aria-valuemax={100}
       >
-        <div className="h-full rounded-full bg-gradient-brand" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-gradient-brand" style={{ width: `${spentPct}%` }} />
+        <div className="h-full bg-warning" style={{ width: `${reservedPct}%` }} />
       </div>
-      <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
-        <span>
-          <MoneyText value={spent} /> {t("budgetUsed")}
-        </span>
-        <span>
-          <MoneyText value={budget - spent} className="text-success" />{" "}
-          {completed ? t("returned") : t("budgetLeft")}
-        </span>
-      </div>
+      {split ? (
+        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span>
+            <MoneyText value={spent} /> {t("budgetSpent")}
+          </span>
+          <span>
+            <MoneyText value={reserved} className="text-warning" /> {t("budgetReserved")}
+          </span>
+          <span>
+            <MoneyText value={left} className="text-success" />{" "}
+            {completed ? t("returned") : t("budgetLeftToReturn")}
+          </span>
+        </div>
+      ) : (
+        <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
+          <span>
+            <MoneyText value={spent} /> {t("budgetUsed")}
+          </span>
+          <span>
+            <MoneyText value={budget - spent} className="text-success" />{" "}
+            {completed ? t("returned") : t("budgetLeft")}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

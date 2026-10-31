@@ -39,6 +39,12 @@ export const dict = {
   applicantsOne: { en: "applicant waiting", sw: "mwombaji anasubiri" },
   review: { en: "Review", sw: "Kagua" },
   budgetUsed: { en: "used", sw: "imetumika" },
+  budgetSpent: { en: "spent", sw: "imetumika" },
+  budgetReserved: {
+    en: "reserved for views still counting",
+    sw: "imehifadhiwa kwa mitazamo inayohesabiwa",
+  },
+  budgetLeftToReturn: { en: "left to return", sw: "iliyobaki kurudishwa" },
   budgetLeft: { en: "left", sw: "imebaki" },
   budget: { en: "Budget", sw: "Bajeti" },
   notFunded: { en: "Not funded", sw: "Haijalipiwa" },
