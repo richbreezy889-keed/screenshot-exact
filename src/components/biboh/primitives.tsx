@@ -7,7 +7,15 @@ import type { CampaignStatus } from "@/data/campaigns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function MoneyText({ value, className, smallPrefix }: { value: number; className?: string; smallPrefix?: boolean }) {
+export function MoneyText({
+  value,
+  className,
+  smallPrefix,
+}: {
+  value: number;
+  className?: string;
+  smallPrefix?: boolean;
+}) {
   if (smallPrefix)
     return (
       <span className={cn("tnum whitespace-nowrap", className)}>
@@ -31,7 +39,12 @@ const statusStyles: Record<CampaignStatus, string> = {
 export function StatusBadge({ status }: { status: CampaignStatus }) {
   const { t } = useApp();
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", statusStyles[status])}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+        statusStyles[status],
+      )}
+    >
       <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
       {t(status)}
     </span>
@@ -39,44 +52,99 @@ export function StatusBadge({ status }: { status: CampaignStatus }) {
 }
 
 export function Panel({ children, className }: { children: ReactNode; className?: string }) {
-  return <section className={cn("rounded-2xl border bg-card p-5 shadow-soft", className)}>{children}</section>;
+  return (
+    <section className={cn("rounded-2xl border bg-card p-5 shadow-soft", className)}>
+      {children}
+    </section>
+  );
 }
 
-export function StatCard({ label, value, icon, hero }: { label: string; value: ReactNode; icon: ReactNode; hero?: boolean }) {
+export function StatCard({
+  label,
+  value,
+  icon,
+  hero,
+}: {
+  label: string;
+  value: ReactNode;
+  icon: ReactNode;
+  hero?: boolean;
+}) {
   return (
     <div
       className={cn(
-        "rounded-2xl border p-5 shadow-soft",
+        "flex h-full flex-col rounded-2xl border p-5 shadow-soft",
         hero ? "border-transparent bg-gradient-brand text-primary-foreground" : "bg-card",
       )}
     >
       <div className="flex items-center justify-between">
         <p className={cn("text-sm", hero ? "opacity-90" : "text-muted-foreground")}>{label}</p>
-        <span className={cn("rounded-xl p-2", hero ? "bg-background/20" : "bg-secondary text-accent")}>{icon}</span>
+        <span
+          className={cn("rounded-xl p-2", hero ? "bg-background/20" : "bg-secondary text-accent")}
+        >
+          {icon}
+        </span>
       </div>
-      <p className="mt-3 truncate whitespace-nowrap font-display text-xl font-bold tnum sm:text-2xl xl:text-3xl">{value}</p>
+      <p className="mt-auto truncate whitespace-nowrap pt-3 font-display text-xl font-bold tnum sm:text-2xl xl:text-3xl">
+        {value}
+      </p>
     </div>
   );
 }
 
-export function BudgetBar({ spent, budget }: { spent: number; budget: number }) {
+export function BudgetBar({
+  spent,
+  reserved = 0,
+  budget,
+  completed,
+  split = false,
+}: {
+  spent: number;
+  reserved?: number;
+  budget: number;
+  completed?: boolean;
+  split?: boolean;
+}) {
   const { t } = useApp();
-  const pct = budget ? Math.min(100, (spent / budget) * 100) : 0;
+  const spentPct = budget ? Math.min(100, (spent / budget) * 100) : 0;
+  const reservedPct = budget ? Math.min(100 - spentPct, (reserved / budget) * 100) : 0;
+  const left = Math.max(0, budget - spent - reserved);
   return (
     <div>
       <div
-        className="h-2 overflow-hidden rounded-full bg-secondary"
+        className="flex h-2 overflow-hidden rounded-full bg-secondary"
         role="progressbar"
-        aria-valuenow={Math.round(pct)}
+        aria-valuenow={Math.round(spentPct + reservedPct)}
         aria-valuemin={0}
         aria-valuemax={100}
       >
-        <div className="h-full rounded-full bg-gradient-brand" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-gradient-brand" style={{ width: `${spentPct}%` }} />
+        <div className="h-full bg-warning" style={{ width: `${reservedPct}%` }} />
       </div>
-      <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
-        <span><MoneyText value={spent} /> {t("budgetUsed")}</span>
-        <span><MoneyText value={budget - spent} className="text-success" /> {t("budgetLeft")}</span>
-      </div>
+      {split ? (
+        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span>
+            <MoneyText value={spent} /> {t("budgetSpent")}
+          </span>
+          <span>
+            <MoneyText value={reserved} className="text-warning" /> {t("budgetReserved")}
+          </span>
+          <span>
+            <MoneyText value={left} className="text-success" />{" "}
+            {completed ? t("returned") : t("budgetLeftToReturn")}
+          </span>
+        </div>
+      ) : (
+        <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
+          <span>
+            <MoneyText value={spent} /> {t("budgetUsed")}
+          </span>
+          <span>
+            <MoneyText value={budget - spent} className="text-success" />{" "}
+            {completed ? t("returned") : t("budgetLeft")}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -109,10 +177,17 @@ export function ListState({
     );
   if (isError)
     return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/40 p-8 text-center" role="alert">
+      <div
+        className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/40 p-8 text-center"
+        role="alert"
+      >
         <AlertTriangle className="h-6 w-6 text-destructive" />
         <p className="text-sm">{t("error")}</p>
-        {onRetry && <Button variant="outline" size="sm" onClick={onRetry}>{t("retry")}</Button>}
+        {onRetry && (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            {t("retry")}
+          </Button>
+        )}
       </div>
     );
   if (isEmpty)

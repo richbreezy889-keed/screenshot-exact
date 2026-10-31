@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatTZS, formatViews } from "@/lib/format";
+import { formatDayMonth, formatTZS, formatViews, postPlatform } from "@/lib/format";
 import { estimateViews } from "@/lib/api";
 
 describe("formatting rules", () => {
@@ -10,8 +10,18 @@ describe("formatting rules", () => {
     expect(formatViews(12400)).toBe("12.4K");
     expect(formatViews(1200000)).toBe("1.2M");
   });
+  it("formats axis dates as day and month in both languages", () => {
+    expect(formatDayMonth("2026-09-23", "en")).toBe("23 Sep");
+    expect(formatDayMonth("2026-10-22", "sw")).toBe("22 Okt");
+    expect(formatDayMonth("2026-08-05", "sw")).toBe("5 Ago");
+  });
   it("estimates views per 1,000 rate", () => {
     expect(estimateViews(5_000_000, 5000)).toBe(1_000_000);
+  });
+  it("names the platform behind a post link", () => {
+    expect(postPlatform("https://tiktok.com/@neemaglow/video/7421")).toBe("TikTok");
+    expect(postPlatform("https://www.instagram.com/p/isayaeats-darbites")).toBe("Instagram");
+    expect(postPlatform("https://example.com/post")).toBe("example.com");
   });
 });
 
