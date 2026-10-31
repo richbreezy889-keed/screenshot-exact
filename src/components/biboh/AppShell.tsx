@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useApp, type TKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const nav: {
   to: "/" | "/campaigns" | "/creators" | "/wallet" | "/settings";
@@ -135,6 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
         ))}
       </nav>
+      <Toaster theme={theme} position="top-right" />
     </div>
   );
 }

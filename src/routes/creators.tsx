@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Search, Star, X } from "lucide-react";
+import { CheckCircle2, MapPin, Search, Star, UserPlus, X } from "lucide-react";
+import { toast } from "sonner";
 import { getCreators } from "@/lib/api";
 import { useApp } from "@/lib/i18n";
 import type { TKey } from "@/lib/i18n";
@@ -13,9 +14,17 @@ import {
   type CreatorPlatform,
   type FollowerRange,
 } from "@/lib/creatorFilters";
-import { totalFollowers, type Creator, type Location, type Niche } from "@/data/creators";
+import { campaigns, campaignsWithOpenSlots, openSlots, type Campaign } from "@/data/campaigns";
+import {
+  recentCampaignsFor,
+  totalFollowers,
+  type Creator,
+  type Location,
+  type Niche,
+} from "@/data/creators";
 import { pluralKey } from "@/lib/plural";
-import { ListState, Panel, ViewsText } from "@/components/biboh/primitives";
+import { formatDate } from "@/lib/format";
+import { ListState, Panel, StatusBadge, ViewsText } from "@/components/biboh/primitives";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,6 +99,7 @@ function CreatorsPage() {
   const q = useQuery({ queryKey: ["creators"], queryFn: getCreators });
   const [filters, setFilters] = useState<CreatorFilters>(defaultCreatorFilters);
   const [selected, setSelected] = useState<Creator | null>(null);
+  const [invites, setInvites] = useState<Record<string, string>>({});
 
   const all = q.data ?? [];
   const visible = filterCreators(all, filters);
@@ -282,7 +292,15 @@ function CreatorsPage() {
         }}
       >
         <SheetContent className="overflow-y-auto sm:max-w-md">
-          {selected && <CreatorProfile creator={selected} />}
+          {selected && (
+            <CreatorProfile
+              creator={selected}
+              invitedCampaignId={invites[selected.id]}
+              onInvite={(campaignId) =>
+                setInvites((prev) => ({ ...prev, [selected.id]: campaignId }))
+              }
+            />
+          )}
         </SheetContent>
       </Sheet>
     </div>
@@ -313,12 +331,32 @@ function FilterSelect({
   );
 }
 
-function CreatorProfile({ creator }: { creator: Creator }) {
-  const { t } = useApp();
+export function CreatorProfile({
+  creator,
+  invitedCampaignId,
+  onInvite,
+}: {
+  creator: Creator;
+  invitedCampaignId?: string | undefined;
+  onInvite: (campaignId: string) => void;
+}) {
+  const { t, lang } = useApp();
+  const [picking, setPicking] = useState(false);
+  const inviteOptions = campaignsWithOpenSlots();
+  const invited = campaigns.find((c) => c.id === invitedCampaignId);
+  const recent = recentCampaignsFor(creator);
   const platforms = [
     { name: "TikTok", value: creator.followers.tiktok },
     { name: "Instagram", value: creator.followers.instagram },
   ];
+
+  const invite = (campaign: Campaign) => {
+    onInvite(campaign.id);
+    setPicking(false);
+    toast.success(t("inviteSent"), {
+      description: `${creator.name} · ${campaign.title}`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -350,6 +388,60 @@ function CreatorProfile({ creator }: { creator: Creator }) {
           <span className="sr-only">{t("rating")}</span>
         </span>
       </div>
+
+      <section className="space-y-2">
+        {invited && (
+          <p
+            role="status"
+            className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+            {t("invited")} · {invited.title}
+          </p>
+        )}
+        <Button
+          type="button"
+          className="w-full"
+          aria-expanded={picking}
+          aria-controls="invite-picker"
+          onClick={() => setPicking((open) => !open)}
+        >
+          <UserPlus className="h-4 w-4" aria-hidden />
+          {t("inviteToCampaign")}
+        </Button>
+
+        {picking && (
+          <div id="invite-picker" className="space-y-2 rounded-xl border bg-secondary/40 p-3">
+            <p className="text-sm font-semibold">{t("invitePickerTitle")}</p>
+            <p className="text-xs text-muted-foreground">{t("invitePickerHelp")}</p>
+            {inviteOptions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("noOpenSlots")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {inviteOptions.map((campaign) => (
+                  <li key={campaign.id}>
+                    <button
+                      type="button"
+                      onClick={() => invite(campaign)}
+                      className="flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">
+                          {campaign.title}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {campaign.brand} · {t("openSlots")}: {openSlots(campaign)}
+                        </span>
+                      </span>
+                      <StatusBadge status={campaign.status} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </section>
 
       <section className="space-y-1.5">
         <h3 className="text-sm font-semibold">{t("about")}</h3>
@@ -389,6 +481,24 @@ function CreatorProfile({ creator }: { creator: Creator }) {
           <p className="text-xs text-muted-foreground">{t("rating")}</p>
           <p className="mt-1 font-display text-lg font-bold tnum">{creator.rating.toFixed(1)}</p>
         </div>
+      </section>
+
+      <section aria-label={t("recentCampaigns")} className="space-y-2">
+        <h3 className="text-sm font-semibold">{t("recentCampaigns")}</h3>
+        <ul className="divide-y rounded-xl border">
+          {recent.map((campaign) => (
+            <li key={campaign.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{campaign.title}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(campaign.date, lang)}</p>
+              </div>
+              <p className="shrink-0 text-sm">
+                <ViewsText value={campaign.views} className="font-semibold" />{" "}
+                <span className="text-xs text-muted-foreground">{t("views")}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

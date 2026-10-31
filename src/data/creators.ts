@@ -16,6 +16,35 @@ export interface Creator {
 
 export const totalFollowers = (c: Creator) => c.followers.tiktok + c.followers.instagram;
 
+export interface RecentCampaign {
+  id: string;
+  title: string;
+  date: string; // ISO date
+  views: number;
+}
+
+// Mock campaign history. Each profile gets a different three-row slice.
+const recentCampaignPool: RecentCampaign[] = [
+  { id: "r1", title: "Zuri Glow Serum Launch", date: "2026-09-18", views: 84_200 },
+  { id: "r2", title: "Kilele Morning Ritual", date: "2026-08-27", views: 51_600 },
+  { id: "r3", title: "Mtaani Wear Street Drop", date: "2026-09-05", views: 63_400 },
+  { id: "r4", title: "Dar Bites Weekend Combo", date: "2026-07-22", views: 38_900 },
+  { id: "r5", title: "Kilele Cold Brew Comedy", date: "2026-08-14", views: 72_300 },
+  { id: "r6", title: "Mtaani Denim Week", date: "2026-06-30", views: 29_700 },
+  { id: "r7", title: "Zuri Holiday Gift Sets", date: "2026-09-29", views: 45_100 },
+  { id: "r8", title: "Dar Bites Lunch Rush", date: "2026-07-08", views: 33_800 },
+  { id: "r9", title: "Kilele Bean to Cup", date: "2026-06-12", views: 21_400 },
+];
+
+/** Three most recent mock campaigns for a creator, newest first. */
+export function recentCampaignsFor(creator: Creator): RecentCampaign[] {
+  const index = creators.findIndex((c) => c.id === creator.id);
+  const start = (Math.max(0, index) * 3) % recentCampaignPool.length;
+  return [0, 1, 2]
+    .map((offset) => recentCampaignPool[(start + offset) % recentCampaignPool.length]!)
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export const creators: Creator[] = [
   {
     id: "u1",

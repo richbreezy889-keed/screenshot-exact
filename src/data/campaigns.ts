@@ -109,3 +109,16 @@ export const campaigns: Campaign[] = [
     views: 225_000,
   },
 ];
+
+/** Creator slots a campaign still needs filled. */
+export function openSlots(c: Campaign) {
+  return Math.max(0, c.creatorsNeeded - c.creatorsApproved);
+}
+
+/**
+ * Campaigns a brand can invite a creator to: live or draft, with at least one
+ * unfilled creator slot.
+ */
+export function campaignsWithOpenSlots(list: Campaign[] = campaigns) {
+  return list.filter((c) => (c.status === "live" || c.status === "draft") && openSlots(c) > 0);
+}

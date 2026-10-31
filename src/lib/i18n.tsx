@@ -227,6 +227,20 @@ export const dict = {
   viewProfile: { en: "View profile", sw: "Tazama wasifu" },
   followersByPlatform: { en: "Followers by platform", sw: "Wafuasi kwa jukwaa" },
   about: { en: "About", sw: "Kuhusu" },
+  inviteToCampaign: { en: "Invite to campaign", sw: "Alika kwenye kampeni" },
+  invitePickerTitle: { en: "Choose a campaign", sw: "Chagua kampeni" },
+  invitePickerHelp: {
+    en: "Live or draft campaigns with open creator slots.",
+    sw: "Kampeni hai au rasimu zilizo na nafasi za watayarishi.",
+  },
+  openSlots: { en: "Open slots", sw: "Nafasi wazi" },
+  invited: { en: "Invited", sw: "Amealikwa" },
+  inviteSent: { en: "Invitation sent", sw: "Mwaliko umetumwa" },
+  recentCampaigns: { en: "Recent campaigns", sw: "Kampeni za hivi karibuni" },
+  noOpenSlots: {
+    en: "No campaigns with open slots.",
+    sw: "Hakuna kampeni zilizo na nafasi wazi.",
+  },
   countingUntilCheckpoint: {
     en: "Counting until checkpoint",
     sw: "Inahesabiwa hadi kituo",
