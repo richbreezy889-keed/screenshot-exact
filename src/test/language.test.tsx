@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import type { ReactNode } from "react";
 import { AppProvider, LANG_COOKIE, useApp } from "@/lib/i18n";
 import { AppShell } from "@/components/biboh/AppShell";
+import { CampaignWizard } from "@/components/biboh/CampaignWizard";
 
 // AppShell only needs Link to render anchors; a full router is unnecessary here.
 vi.mock("@tanstack/react-router", () => ({
@@ -86,5 +87,21 @@ describe("stored language", () => {
     expect(options[0]!).toHaveAttribute("aria-pressed", "false");
     expect(options[1]!).toHaveAttribute("aria-pressed", "true");
     expect(screen.getAllByText("Kampeni").length).toBeGreaterThan(0);
+  });
+});
+
+describe("campaign wizard language", () => {
+  it("translates niche chips and field placeholders in Swahili", () => {
+    render(
+      <AppProvider initialLang="sw">
+        <CampaignWizard />
+      </AppProvider>,
+    );
+
+    for (const label of ["Chakula", "Mitindo", "Urembo", "Ucheshi", "Teknolojia"]) {
+      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+    }
+    expect(screen.getByPlaceholderText("Uzinduzi wa Zuri Glow Serum")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Beauty" })).not.toBeInTheDocument();
   });
 });

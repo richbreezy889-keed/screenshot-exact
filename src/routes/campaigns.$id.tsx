@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { useApp } from "@/lib/i18n";
 import { formatDate, formatViews, postPlatform } from "@/lib/format";
+import { nicheKey } from "@/lib/niche";
 import {
   BudgetBar,
   ListState,
@@ -388,6 +389,7 @@ function ApplicantCard({
   if (!creator) return null;
 
   const decided = applicant.status !== "pending";
+  const niche = nicheKey(creator.niche);
   const initials = creator.name
     .split(" ")
     .filter(Boolean)
@@ -412,7 +414,7 @@ function ApplicantCard({
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-semibold">{creator.name}</h3>
           <p className="truncate text-xs text-muted-foreground">
-            {creator.handle} · <span className="capitalize">{creator.niche}</span>
+            {creator.handle} · {niche ? t(niche) : creator.niche}
           </p>
         </div>
         <ApplicantBadge status={applicant.status} />

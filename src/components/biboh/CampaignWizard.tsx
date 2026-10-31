@@ -12,6 +12,7 @@ import {
 import { creatorCap, estimateViews, fundCampaign } from "@/lib/api";
 import { MIN_RATE_PER_1K } from "@/data/config";
 import { useApp, type TKey } from "@/lib/i18n";
+import { nicheKey } from "@/lib/niche";
 import { cn } from "@/lib/utils";
 import { MoneyText, Panel, ViewsText } from "@/components/biboh/primitives";
 import { formatDate, formatTZS } from "@/lib/format";
@@ -113,6 +114,12 @@ export function CampaignWizard() {
     payment: "M-Pesa",
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
+  const nicheLabel = (n: string) => {
+    const key = nicheKey(n);
+    return key ? t(key) : n;
+  };
+  const locationLabel = (l: string) => (l === "Anywhere in Tanzania" ? t("anywhereInTanzania") : l);
+  const paymentLabel = (p: string) => (p === "Card" ? t("paymentCard") : p);
 
   const valid = [
     f.title.trim() && f.description.trim() && f.platforms.length > 0,
@@ -142,7 +149,7 @@ export function CampaignWizard() {
         <h1 className="mt-6 text-3xl font-bold">{t("successTitle")}</h1>
         <p className="mt-2 text-muted-foreground">{t("successBody")}</p>
         <p className="mt-4 font-display text-xl font-semibold">
-          <MoneyText value={f.budget} /> · {f.payment}
+          <MoneyText value={f.budget} /> · {paymentLabel(f.payment)}
         </p>
         <Button asChild variant="hero" size="lg" className="mt-8 rounded-xl">
           <Link to="/campaigns">{t("viewCampaigns")}</Link>
@@ -154,7 +161,7 @@ export function CampaignWizard() {
     <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-bold md:text-3xl">{t("createCampaign")}</h1>
 
-      <ol className="flex items-center gap-2" aria-label="Progress">
+      <ol className="flex items-center gap-2" aria-label={t("progressLabel")}>
         {steps.map((s, i) => (
           <li key={s} className="flex flex-1 items-center gap-2">
             <span
@@ -193,7 +200,7 @@ export function CampaignWizard() {
                 className={field}
                 value={f.title}
                 onChange={(e) => set("title", e.target.value)}
-                placeholder="Zuri Glow Serum Launch"
+                placeholder={t("titlePlaceholder")}
               />
             </Field>
             <Field
@@ -205,7 +212,7 @@ export function CampaignWizard() {
                 rows={3}
                 value={f.description}
                 onChange={(e) => set("description", e.target.value)}
-                placeholder="Show your morning skincare routine using the new serum."
+                placeholder={t("descriptionPlaceholder")}
               />
             </Field>
             <div>
@@ -237,7 +244,7 @@ export function CampaignWizard() {
               <div className="mt-2 flex flex-wrap gap-2">
                 {niches.map((n) => (
                   <Chip key={n} active={f.niche === n} onClick={() => set("niche", n)}>
-                    <span className="capitalize">{n}</span>
+                    {nicheLabel(n)}
                   </Chip>
                 ))}
               </div>
@@ -249,7 +256,7 @@ export function CampaignWizard() {
                   rows={3}
                   value={f.dos}
                   onChange={(e) => set("dos", e.target.value)}
-                  placeholder="Show the product in the first 3 seconds"
+                  placeholder={t("dosPlaceholder")}
                 />
               </Field>
               <Field label={t("donts")}>
@@ -258,7 +265,7 @@ export function CampaignWizard() {
                   rows={3}
                   value={f.donts}
                   onChange={(e) => set("donts", e.target.value)}
-                  placeholder="Don't mention competitor brands"
+                  placeholder={t("dontsPlaceholder")}
                 />
               </Field>
             </div>
@@ -283,7 +290,7 @@ export function CampaignWizard() {
                   aria-describedby="rate-help rate-msg"
                 />
                 <p id="rate-help" className="mt-1 text-xs text-muted-foreground">
-                  Minimum rate: {formatTZS(MIN_RATE_PER_1K)} per 1,000 views
+                  {t("minRateMsg")} {formatTZS(MIN_RATE_PER_1K)} {t("minRateHelpSuffix")}
                 </p>
               </Field>
               <Field label={t("creatorsNeeded")} error={f.creators < 1 ? t("minOne") : undefined}>
@@ -373,7 +380,7 @@ export function CampaignWizard() {
                 <SelectContent>
                   {locations.map((location) => (
                     <SelectItem key={location} value={location}>
-                      {location}
+                      {locationLabel(location)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -388,12 +395,7 @@ export function CampaignWizard() {
               {[
                 [t("title"), f.title],
                 [t("platforms"), f.platforms.join(", ")],
-                [
-                  t("niche"),
-                  <span key="n" className="capitalize">
-                    {f.niche}
-                  </span>,
-                ],
+                [t("niche"), <span key="n">{nicheLabel(f.niche)}</span>],
                 [t("totalBudget"), <MoneyText key="b" value={f.budget} />],
                 [t("ratePer1k"), <MoneyText key="r" value={f.rate} />],
                 [
@@ -406,7 +408,7 @@ export function CampaignWizard() {
                   t("eachCanEarn"),
                   <MoneyText key="cap" value={creatorCap(f.budget, f.creators)} />,
                 ],
-                [t("location"), f.location],
+                [t("location"), locationLabel(f.location)],
                 [t("minFollowers"), <ViewsText key="m" value={f.minFollowers} />],
               ].map(([k, v], i) => (
                 <div key={i}>
@@ -437,7 +439,7 @@ export function CampaignWizard() {
                       f.payment === p ? "border-primary bg-primary/15" : "hover:border-primary/60",
                     )}
                   >
-                    {p}
+                    {paymentLabel(p)}
                   </button>
                 ))}
               </div>
