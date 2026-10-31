@@ -1,14 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
+  campaignTotals,
   canApproveMore,
+  checkpointDate,
+  checkpointResult,
   computeStats,
   countApproved,
   creatorCap,
   creatorEarnings,
+  escrowBalance,
   feeSplit,
+  getCampaign,
 } from "@/lib/api";
 import { campaigns } from "@/data/campaigns";
-import { campaignDetails, type Applicant, type ApplicantStatus } from "@/data/campaignDetail";
+import {
+  campaignDetails,
+  type Applicant,
+  type ApplicantStatus,
+  type LedgerEntry,
+} from "@/data/campaignDetail";
 import { creators } from "@/data/creators";
 import { PLATFORM_FEE } from "@/data/config";
 
@@ -61,6 +71,33 @@ describe("feeSplit", () => {
 
   it("returns zero for a zero payout", () => {
     expect(feeSplit(0)).toEqual({ fee: 0, net: 0 });
+  });
+});
+
+describe("escrowBalance", () => {
+  const ledger: LedgerEntry[] = [
+    { id: "l1", kind: "funded", date: "2026-10-01", amount: 5_000_000 },
+    { id: "l2", kind: "paidOut", date: "2026-10-20", amount: 1_381_590 },
+    { id: "l3", kind: "fee", date: "2026-10-20", amount: 243_810 },
+  ];
+
+  it("subtracts creator payouts and the platform fee from funding", () => {
+    expect(escrowBalance(ledger)).toBe(3_374_600);
+  });
+
+  it("subtracts refunds and never shows a negative balance", () => {
+    expect(
+      escrowBalance([
+        ...ledger,
+        { id: "l4", kind: "returned", date: "2026-11-01", amount: 1_000_000 },
+      ]),
+    ).toBe(2_374_600);
+    expect(
+      escrowBalance([
+        ...ledger,
+        { id: "l4", kind: "returned", date: "2026-11-01", amount: 4_000_000 },
+      ]),
+    ).toBe(0);
   });
 });
 
@@ -118,45 +155,47 @@ describe("approved count derivation", () => {
   });
 });
 
-/** Gross = every result row paid at the campaign rate, clamped to the creator's share. */
-function campaignGross(campaign: (typeof campaigns)[number]) {
+/** Rolls the checkpoint rule over a campaign's result rows. */
+function campaignRollup(campaign: (typeof campaigns)[number]) {
   const cap = creatorCap(campaign.budget, campaign.creatorsNeeded);
-  const detail = campaignDetails[campaign.id];
-  const rows = (detail?.results ?? []).map((r) => ({
+  const rows = (campaignDetails[campaign.id]?.results ?? []).map((r) => ({
     ...r,
+    ...checkpointResult(r, campaign.ratePer1k, cap),
     uncapped: Math.floor((r.views / 1000) * campaign.ratePer1k),
-    paid: creatorEarnings(r.views, campaign.ratePer1k, cap),
   }));
+  const paidRows = rows.filter((r) => r.checkpointPassed);
   return {
     cap,
     rows,
-    gross: rows.reduce((sum, r) => sum + r.paid, 0),
-    views: rows.reduce((sum, r) => sum + r.views, 0),
-    atCap: rows.filter((r) => r.uncapped >= cap).length,
+    paidRows,
+    gross: paidRows.reduce((sum, r) => sum + r.earnings, 0),
+    views: paidRows.reduce((sum, r) => sum + r.verifiedViews, 0),
+    counting: rows.reduce((sum, r) => sum + r.countingViews, 0),
+    atCap: paidRows.filter((r) => r.uncapped >= cap).length,
   };
 }
 
 describe("campaign money consistency", () => {
-  it("spent equals the creators' earnings before fee from the results", () => {
+  it("spent equals the creators' earnings before fee from verified views", () => {
     for (const campaign of campaigns) {
-      const { gross } = campaignGross(campaign);
+      const { gross } = campaignRollup(campaign);
       expect(campaign.spent, `${campaign.id} spent`).toBe(gross);
     }
   });
 
-  it("verified views equal the sum of result views", () => {
+  it("verified views equal the sum of verified result views", () => {
     for (const campaign of campaigns) {
-      const { views } = campaignGross(campaign);
+      const { views } = campaignRollup(campaign);
       expect(campaign.views, `${campaign.id} views`).toBe(views);
     }
   });
 
   it("only one or two creators reach their share cap per campaign", () => {
     for (const campaign of campaigns) {
-      const { rows, atCap } = campaignGross(campaign);
+      const { paidRows, atCap } = campaignRollup(campaign);
       expect(atCap, `${campaign.id} creators at cap`).toBeLessThanOrEqual(2);
-      if (rows.length > 1) {
-        expect(atCap, `${campaign.id} creators below cap`).toBeLessThan(rows.length);
+      if (paidRows.length > 1) {
+        expect(atCap, `${campaign.id} creators below cap`).toBeLessThan(paidRows.length);
       }
     }
   });
@@ -175,14 +214,105 @@ describe("campaign money consistency", () => {
 
   it("keeps dashboard totals derived from the campaign data", () => {
     const stats = computeStats(campaigns);
-    const spent = campaigns.reduce((sum, c) => sum + c.spent, 0);
-    const views = campaigns.reduce((sum, c) => sum + c.views, 0);
-    const gross = campaigns.reduce((sum, c) => sum + campaignGross(c).gross, 0);
+    const spent = campaigns.reduce((sum, c) => sum + campaignTotals(c).gross, 0);
+    const views = campaigns.reduce((sum, c) => sum + campaignTotals(c).verifiedViews, 0);
 
     expect(stats.spend).toBe(spent);
     expect(stats.views).toBe(views);
     expect(stats.avgCpm).toBe(views ? Math.round((spent / views) * 1000) : 0);
     // Total spend must be the money actually paid to creators, not a separate figure.
-    expect(stats.spend).toBe(gross);
+    expect(stats.spend).toBe(spent);
+  });
+});
+
+describe("checkpoint earnings rule", () => {
+  const row = (postedAt: string, views: number) => ({
+    creatorId: "u1",
+    postUrl: "https://tiktok.com/@example/video/1",
+    postedAt,
+    views,
+  });
+
+  it("puts the checkpoint exactly 7 days after posting", () => {
+    expect(checkpointDate("2026-10-15")).toBe("2026-10-22");
+    expect(checkpointDate("2026-09-10")).toBe("2026-09-17");
+  });
+
+  it("pays checkpoint views once the checkpoint has passed", () => {
+    const result = checkpointResult(row("2026-10-15", 50_000), 4_000, 500_000);
+    expect(result.checkpointPassed).toBe(true);
+    expect(result.verifiedViews).toBe(50_000);
+    expect(result.countingViews).toBe(0);
+    expect(result.earnings).toBe(200_000);
+  });
+
+  it("pays nothing while a post is still counting", () => {
+    const result = checkpointResult(row("2026-10-16", 50_000), 4_000, 500_000);
+    expect(result.checkpointPassed).toBe(false);
+    expect(result.verifiedViews).toBe(0);
+    expect(result.countingViews).toBe(50_000);
+    expect(result.earnings).toBe(0);
+  });
+
+  it("caps verified earnings at the creator's share", () => {
+    const result = checkpointResult(row("2026-10-01", 1_000_000), 5_000, 375_000);
+    expect(result.earnings).toBe(375_000);
+  });
+
+  it("gives every result row a posting date", () => {
+    for (const [campaignId, detail] of Object.entries(campaignDetails)) {
+      for (const result of detail.results) {
+        expect(result.postedAt, `${campaignId} → ${result.creatorId}`).toMatch(
+          /^\d{4}-\d{2}-\d{2}$/,
+        );
+      }
+    }
+  });
+
+  it("keeps counting views on live campaigns and verifies completed ones", () => {
+    for (const campaign of campaigns) {
+      const { counting, paidRows, rows } = campaignRollup(campaign);
+      if (campaign.status === "live" && rows.length > 0) {
+        expect(counting, `${campaign.id} counting`).toBeGreaterThan(0);
+        expect(paidRows.length, `${campaign.id} verified posts`).toBeGreaterThan(0);
+      }
+      if (campaign.status === "completed") {
+        expect(counting, `${campaign.id} counting`).toBe(0);
+        expect(paidRows.length, `${campaign.id} verified posts`).toBe(rows.length);
+      }
+      expect(campaign.spent, `${campaign.id} spent`).toBe(campaignTotals(campaign).gross);
+      expect(campaign.views, `${campaign.id} views`).toBe(campaignTotals(campaign).verifiedViews);
+    }
+  });
+});
+
+describe("payments ledger dates and escrow", () => {
+  it("dates payouts and the fee at the latest checkpoint reached", async () => {
+    const { ledger } = await getCampaign("c1");
+    const payouts = ledger.filter((entry) => entry.kind === "paidOut" || entry.kind === "fee");
+    expect(payouts).toHaveLength(2);
+    for (const entry of payouts) expect(entry.date).toBe("2026-10-19");
+
+    const completed = await getCampaign("c4");
+    const completedPayouts = completed.ledger.filter(
+      (entry) => entry.kind === "paidOut" || entry.kind === "fee",
+    );
+    for (const entry of completedPayouts) expect(entry.date).toBe("2026-09-17");
+  });
+
+  it("leaves only unspent budget in live escrow and nothing in completed escrow", async () => {
+    const live = await getCampaign("c1");
+    expect(escrowBalance(live.ledger)).toBe(live.campaign.budget - live.campaign.spent);
+
+    const completed = await getCampaign("c4");
+    expect(escrowBalance(completed.ledger)).toBe(0);
+    const refund = completed.ledger.find((entry) => entry.kind === "returned");
+    expect(refund?.amount).toBe(completed.campaign.budget - completed.campaign.spent);
+  });
+
+  it("does not fund a draft campaign", async () => {
+    const draft = await getCampaign("c5");
+    expect(draft.ledger.some((entry) => entry.kind === "funded")).toBe(false);
+    expect(escrowBalance(draft.ledger)).toBe(0);
   });
 });

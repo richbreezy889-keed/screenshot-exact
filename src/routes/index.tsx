@@ -16,7 +16,8 @@ import { attentionTab } from "@/data/dashboard";
 import { getActiveCampaigns, getAttentionItems, getDailySeries, getStats } from "@/lib/api";
 import { useApp } from "@/lib/i18n";
 import { attentionLabelKey } from "@/lib/plural";
-import { formatDate, formatTZS, formatViews } from "@/lib/format";
+import { formatDate, formatDayMonth, formatTZS, formatViews } from "@/lib/format";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   BudgetBar,
   ListState,
@@ -58,10 +59,16 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const { t, lang } = useApp();
+  const isMobile = useIsMobile();
   const stats = useQuery({ queryKey: ["stats"], queryFn: getStats });
   const series = useQuery({ queryKey: ["series"], queryFn: getDailySeries });
   const attention = useQuery({ queryKey: ["attention"], queryFn: getAttentionItems });
   const active = useQuery({ queryKey: ["campaigns", "live"], queryFn: getActiveCampaigns });
+
+  // A tick every five days (plus the latest day) keeps the 30-day axis readable.
+  const xTicks = series.data
+    ?.filter((_, i, arr) => i % 5 === 0 || i === arr.length - 1)
+    .map((point) => point.date);
 
   const icons = {
     approveVideo: CheckCircle2,
@@ -88,7 +95,7 @@ function Dashboard() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 md:gap-4">
+      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-4 md:gap-4">
         {stats.isLoading || !stats.data ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-32 rounded-2xl bg-secondary" />
@@ -127,87 +134,96 @@ function Dashboard() {
             {series.isLoading ? (
               <Skeleton className="h-72 rounded-xl bg-secondary" />
             ) : (
-              <ChartContainer
-                config={chartConfig}
-                className="h-72 w-full"
-                role="group"
-                aria-label={t("last30")}
-              >
-                <ComposedChart
-                  data={series.data ?? []}
-                  margin={{ left: 0, right: 4, top: 8 }}
-                  accessibilityLayer
+              <>
+                <p className="pr-1 text-right text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  TZS
+                </p>
+                <ChartContainer
+                  config={chartConfig}
+                  className="h-72 w-full"
+                  role="group"
+                  aria-label={t("last30")}
                 >
-                  <defs>
-                    <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="var(--border)" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(d: string) => d.slice(8)}
-                    stroke="var(--muted-foreground)"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    yAxisId="v"
-                    tickFormatter={formatViews}
-                    stroke="var(--muted-foreground)"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    width={40}
-                  />
-                  <YAxis
-                    yAxisId="s"
-                    orientation="right"
-                    tickFormatter={(value: number) => `TZS ${formatViews(value)}`}
-                    stroke="var(--chart-2)"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    width={62}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent
-                        labelFormatter={(value: unknown) => formatDate(String(value), lang)}
-                        formatter={(value, _name, item) => {
-                          const numeric = Number(value);
-                          return item?.dataKey === "spend"
-                            ? formatTZS(numeric)
-                            : formatViews(numeric);
-                        }}
-                      />
-                    }
-                  />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Area
-                    yAxisId="v"
-                    type="monotone"
-                    dataKey="views"
-                    name={t("views")}
-                    stroke="var(--chart-1)"
-                    strokeWidth={2}
-                    fill="url(#gv)"
-                  />
-                  <Line
-                    yAxisId="s"
-                    type="monotone"
-                    dataKey="spend"
-                    name={t("spend")}
-                    stroke="var(--chart-2)"
-                    strokeWidth={1.75}
-                    dot={false}
-                    activeDot={{ r: 3 }}
-                  />
-                </ComposedChart>
-              </ChartContainer>
+                  <ComposedChart
+                    data={series.data ?? []}
+                    margin={{ left: 0, right: 4, top: isMobile ? 88 : 8 }}
+                    accessibilityLayer
+                  >
+                    <defs>
+                      <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.5} />
+                        <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="var(--border)" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      ticks={xTicks ?? []}
+                      tickFormatter={(d: string) => formatDayMonth(d, lang)}
+                      interval="preserveStartEnd"
+                      minTickGap={28}
+                      stroke="var(--muted-foreground)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      yAxisId="v"
+                      tickFormatter={formatViews}
+                      stroke="var(--muted-foreground)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      width={40}
+                    />
+                    <YAxis
+                      yAxisId="s"
+                      orientation="right"
+                      tickFormatter={(value: number) => formatViews(value)}
+                      stroke="var(--chart-2)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      width={44}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      position={isMobile ? { y: 4 } : {}}
+                      content={
+                        <ChartTooltipContent
+                          labelFormatter={(value: unknown) => formatDate(String(value), lang)}
+                          formatter={(value, _name, item) => {
+                            const numeric = Number(value);
+                            return item?.dataKey === "spend"
+                              ? formatTZS(numeric)
+                              : formatViews(numeric);
+                          }}
+                        />
+                      }
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Area
+                      yAxisId="v"
+                      type="monotone"
+                      dataKey="views"
+                      name={t("views")}
+                      stroke="var(--chart-1)"
+                      strokeWidth={2}
+                      fill="url(#gv)"
+                    />
+                    <Line
+                      yAxisId="s"
+                      type="monotone"
+                      dataKey="spend"
+                      name={t("spend")}
+                      stroke="var(--chart-2)"
+                      strokeWidth={1.75}
+                      dot={false}
+                      activeDot={{ r: 3 }}
+                    />
+                  </ComposedChart>
+                </ChartContainer>
+              </>
             )}
           </div>
         </Panel>
@@ -290,7 +306,7 @@ function Dashboard() {
                         {c.title}
                       </Link>
                       <p className="text-xs text-muted-foreground">
-                        {c.brand} · <ViewsText value={c.views} /> {t("views").toLowerCase()}
+                        {c.brand} · <ViewsText value={c.views} /> {t("verifiedViews").toLowerCase()}
                       </p>
                     </div>
                     <StatusBadge status={c.status} />

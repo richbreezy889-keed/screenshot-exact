@@ -5,15 +5,15 @@ import { CalendarDays, Film, MapPin, Star } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   canApproveMore,
+  checkpointResult,
   countApproved,
-  creatorEarnings,
+  escrowBalance,
   feeSplit,
   getCampaign,
   getCreatorById,
 } from "@/lib/api";
 import { useApp } from "@/lib/i18n";
-import { formatDate, formatViews } from "@/lib/format";
-import { recentViews } from "@/lib/views";
+import { formatDate, formatViews, postPlatform } from "@/lib/format";
 import {
   BudgetBar,
   ListState,
@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ChartContainer,
   ChartTooltip,
@@ -207,21 +208,23 @@ function CampaignDetail() {
                   })
                 }
               >
-                <TabsList
-                  aria-label={t("sections")}
-                  className="h-auto w-full flex-wrap justify-start gap-1"
-                >
-                  <TabsTrigger value="applicants">
-                    {t("tabApplicants")}
-                    <TabCount count={pendingApplicants} />
-                  </TabsTrigger>
-                  <TabsTrigger value="content">
-                    {t("tabContent")}
-                    <TabCount count={awaitingContent} />
-                  </TabsTrigger>
-                  <TabsTrigger value="results">{t("tabResults")}</TabsTrigger>
-                  <TabsTrigger value="payments">{t("tabPayments")}</TabsTrigger>
-                </TabsList>
+                <TooltipProvider delayDuration={200}>
+                  <TabsList
+                    aria-label={t("sections")}
+                    className="h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto [&>*]:shrink-0"
+                  >
+                    <TabsTrigger value="applicants">
+                      {t("tabApplicants")}
+                      <TabCount count={pendingApplicants} hint={t("applicantCountHint")} />
+                    </TabsTrigger>
+                    <TabsTrigger value="content">
+                      {t("tabContent")}
+                      <TabCount count={awaitingContent} hint={t("contentCountHint")} />
+                    </TabsTrigger>
+                    <TabsTrigger value="results">{t("tabResults")}</TabsTrigger>
+                    <TabsTrigger value="payments">{t("tabPayments")}</TabsTrigger>
+                  </TabsList>
+                </TooltipProvider>
 
                 <TabsContent value="applicants" className="space-y-4 pt-4">
                   {full && (
@@ -297,7 +300,11 @@ function CampaignDetail() {
           <DialogHeader>
             <DialogTitle>{t("requestRevision")}</DialogTitle>
             <DialogDescription>
-              {t("requestRevision")}: {revising ? getCreatorById(revising.creatorId)?.name : ""}
+              {revising
+                ? t("revisionForVideo")
+                    .replace("{name}", getCreatorById(revising.creatorId)?.name ?? "")
+                    .replace("{date}", formatDate(revising.submitted, lang))
+                : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -326,12 +333,21 @@ function CampaignDetail() {
   );
 }
 
-function TabCount({ count }: { count: number }) {
+function TabCount({ count, hint }: { count: number; hint: string }) {
   if (count === 0) return null;
   return (
-    <span className="ml-1.5 rounded-full bg-secondary px-1.5 py-0.5 text-xs tabular-nums text-foreground">
-      {count}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          tabIndex={0}
+          aria-label={`${count} ${hint}`}
+          className="ml-1.5 inline-flex items-center rounded-full bg-secondary px-1.5 py-0.5 text-xs tabular-nums text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {count}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -430,17 +446,17 @@ function ApplicantCard({
         ))}
       </dl>
 
-      <div className="mt-auto flex items-center gap-2">
-        <Button size="sm" onClick={onApprove} disabled={decided || full}>
-          {t("approve")}
-        </Button>
-        <Button size="sm" variant="outline" onClick={onDecline} disabled={decided}>
-          {t("decline")}
-        </Button>
-        {full && !decided && (
-          <span className="text-xs text-muted-foreground">{t("slotsFull")}</span>
-        )}
-      </div>
+      {!decided && (
+        <div className="mt-auto flex items-center gap-2">
+          <Button size="sm" onClick={onApprove} disabled={full}>
+            {t("approve")}
+          </Button>
+          <Button size="sm" variant="outline" onClick={onDecline}>
+            {t("decline")}
+          </Button>
+          {full && <span className="text-xs text-muted-foreground">{t("slotsFull")}</span>}
+        </div>
+      )}
     </article>
   );
 }
@@ -477,6 +493,7 @@ function ContentCard({
   const { t, lang } = useApp();
   const creator = getCreatorById(submission.creatorId);
   const decided = submission.status === "approved";
+  const awaitingNewVideo = submission.status === "revision";
 
   return (
     <article className="flex flex-col gap-4 rounded-2xl border bg-secondary/40 p-4 sm:flex-row">
@@ -504,14 +521,23 @@ function ContentCard({
             {submission.note}
           </p>
         )}
-        <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" onClick={onApprove} disabled={decided}>
-            {t("approve")}
-          </Button>
-          <Button size="sm" variant="outline" onClick={onRequestRevision} disabled={decided}>
-            {t("requestRevision")}
-          </Button>
-        </div>
+        {!decided && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button size="sm" onClick={onApprove}>
+              {t("approve")}
+            </Button>
+            {!awaitingNewVideo && (
+              <Button size="sm" variant="outline" onClick={onRequestRevision}>
+                {t("requestRevision")}
+              </Button>
+            )}
+          </div>
+        )}
+        {awaitingNewVideo && (
+          <p className="inline-flex items-center rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-medium text-accent">
+            {t("waitingNewVideo")}
+          </p>
+        )}
       </div>
     </article>
   );
@@ -524,13 +550,14 @@ function ResultsTab({ data }: { data: CampaignData }) {
   const rows = detail.results.map((r) => ({
     ...r,
     creator: getCreatorById(r.creatorId),
-    earnings: creatorEarnings(r.views, campaign.ratePer1k, cap),
+    ...checkpointResult(r, campaign.ratePer1k, cap),
   }));
-  const totalViews = rows.reduce((sum, r) => sum + r.views, 0);
-  const gross = rows.reduce((sum, r) => sum + r.earnings, 0);
+  const verifiedRows = rows.filter((r) => r.checkpointPassed);
+  const totalViews = verifiedRows.reduce((sum, r) => sum + r.verifiedViews, 0);
+  const gross = verifiedRows.reduce((sum, r) => sum + r.earnings, 0);
   const { fee, net } = feeSplit(gross);
-  // Same slice the dashboard's "views to verify" attention item uses.
-  const pendingViews = recentViews(detail.viewsOverTime, 7);
+  // Views still inside their 7-day window — same figure as the dashboard item.
+  const pendingViews = rows.reduce((sum, r) => sum + r.countingViews, 0);
 
   const chartConfig = {
     views: { label: t("views"), color: "var(--chart-1)" },
@@ -569,14 +596,31 @@ function ResultsTab({ data }: { data: CampaignData }) {
                         aria-label={`${t("openPost")}: ${r.postUrl}`}
                         className="text-accent underline underline-offset-4 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        {safeHost(r.postUrl)}
+                        {t("viewPostOn")} {postPlatform(r.postUrl)}
                       </a>
                     </TableCell>
                     <TableCell className="text-right">
-                      <ViewsText value={r.views} />
+                      {r.checkpointPassed ? (
+                        <ViewsText value={r.verifiedViews} />
+                      ) : (
+                        <span className="inline-block">
+                          <span className="tnum block text-warning">
+                            {formatViews(r.countingViews)}
+                          </span>
+                          <span className="block text-[0.7rem] text-muted-foreground">
+                            {t("countingUntilCheckpoint")}
+                          </span>
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <MoneyText value={r.earnings} className="font-medium" />
+                      {r.checkpointPassed ? (
+                        <MoneyText value={r.earnings} className="font-medium" />
+                      ) : (
+                        <span className="text-muted-foreground" title={t("countingNote")}>
+                          —
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -624,8 +668,9 @@ function ResultsTab({ data }: { data: CampaignData }) {
             value={<MoneyText value={net} className="text-success" />}
           />
           <SummaryStat
-            label={t("viewsToVerifyRecent")}
+            label={t("countingUntilCheckpoint")}
             value={<ViewsText value={pendingViews} className="text-warning" />}
+            note={t("countingNote")}
           />
         </div>
 
@@ -678,11 +723,12 @@ function ResultsTab({ data }: { data: CampaignData }) {
   );
 }
 
-function SummaryStat({ label, value }: { label: string; value: ReactNode }) {
+function SummaryStat({ label, value, note }: { label: string; value: ReactNode; note?: string }) {
   return (
     <div className="rounded-2xl border bg-secondary/40 p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 font-display text-lg font-bold">{value}</p>
+      {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
     </div>
   );
 }
@@ -703,6 +749,7 @@ const ledgerSign: Record<LedgerKind, string> = {
 
 function PaymentsTab({ ledger }: { ledger: LedgerEntry[] }) {
   const { t, lang } = useApp();
+  const inEscrow = escrowBalance(ledger);
   // Newest first; entries on the same date keep reverse insertion order.
   const sorted = [...ledger].sort((a, b) =>
     a.date === b.date ? b.id.localeCompare(a.id) : b.date.localeCompare(a.date),
@@ -716,6 +763,10 @@ function PaymentsTab({ ledger }: { ledger: LedgerEntry[] }) {
       emptyText={t("emptyPayments")}
     >
       <div className="space-y-3">
+        <SummaryStat
+          label={t("inEscrow")}
+          value={<MoneyText value={inEscrow} className="text-success" />}
+        />
         <h3 className="font-semibold">{t("ledger")}</h3>
         <div className="overflow-hidden rounded-2xl border">
           <Table>
@@ -747,12 +798,4 @@ function PaymentsTab({ ledger }: { ledger: LedgerEntry[] }) {
       </div>
     </ListState>
   );
-}
-
-function safeHost(url: string) {
-  try {
-    return new URL(url).host;
-  } catch {
-    return url;
-  }
 }

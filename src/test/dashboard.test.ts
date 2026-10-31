@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { attentionItems, attentionTab, dailySeries } from "@/data/dashboard";
+import { attentionTab, dailySeries } from "@/data/dashboard";
 import { campaigns } from "@/data/campaigns";
 import { campaignDetails } from "@/data/campaignDetail";
-import { computeStats } from "@/lib/api";
-import { recentViews } from "@/lib/views";
+import { attentionItems, campaignTotals, computeStats } from "@/lib/api";
 
 const lifetimeViews = campaigns.reduce((sum, c) => sum + c.views, 0);
 const lifetimeSpend = campaigns.reduce((sum, c) => sum + c.spent, 0);
@@ -71,8 +70,10 @@ describe("needs your attention", () => {
     (campaignDetails[campaignId]?.submissions ?? []).filter((s) => s.status === "awaiting").length;
   const pendingApplicants = (campaignId: string) =>
     (campaignDetails[campaignId]?.applicants ?? []).filter((a) => a.status === "pending").length;
-  const recentCheckpointViews = (campaignId: string) =>
-    recentViews(campaignDetails[campaignId]?.viewsOverTime ?? [], 7);
+  const recentCheckpointViews = (campaignId: string) => {
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    return campaign ? campaignTotals(campaign).countingViews : 0;
+  };
 
   it("counts match what the campaign pages show", () => {
     for (const item of attentionItems) {
@@ -87,13 +88,14 @@ describe("needs your attention", () => {
     }
   });
 
-  it("asks to verify only a recent slice, not the whole campaign", () => {
+  it("asks to verify the views still counting toward a checkpoint", () => {
     const verify = attentionItems.find((item) => item.kind === "verifyViews");
     expect(verify).toBeDefined();
     const campaign = campaigns.find((c) => c.id === verify?.campaignId);
     expect(campaign).toBeDefined();
-    expect(verify?.count).toBeLessThan(campaign?.views ?? 0);
-    expect(verify?.count).toBeLessThanOrEqual(Math.round((campaign?.views ?? 0) * 0.35));
+    expect(verify?.count).toBe(campaignTotals(campaign!).countingViews);
+    expect(verify?.count).toBeGreaterThan(0);
+    expect(verify?.count).toBeLessThan(lifetimeViews);
   });
 
   it("names the campaign shown on the campaign page", () => {

@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 export type Lang = "en" | "sw";
 
+export const LANG_COOKIE = "biboh-lang";
+
 // eslint-disable-next-line react-refresh/only-export-components
 export const dict = {
   dashboard: { en: "Dashboard", sw: "Dashibodi" },
@@ -38,6 +40,8 @@ export const dict = {
   review: { en: "Review", sw: "Kagua" },
   budgetUsed: { en: "used", sw: "imetumika" },
   budgetLeft: { en: "left", sw: "imebaki" },
+  budget: { en: "Budget", sw: "Bajeti" },
+  notFunded: { en: "Not funded", sw: "Haijalipiwa" },
   all: { en: "All", sw: "Zote" },
   draft: { en: "Draft", sw: "Rasimu" },
   live: { en: "Live", sw: "Hai" },
@@ -124,6 +128,14 @@ export const dict = {
   tabContent: { en: "Content", sw: "Maudhui" },
   tabResults: { en: "Results", sw: "Matokeo" },
   tabPayments: { en: "Payments", sw: "Malipo" },
+  applicantCountHint: {
+    en: "Applicants waiting for your decision",
+    sw: "Waombaji wanasubiri uamuzi wako",
+  },
+  contentCountHint: {
+    en: "Videos waiting for your review",
+    sw: "Video zinazosubiri ukaguzi wako",
+  },
   approve: { en: "Approve", sw: "Idhinisha" },
   decline: { en: "Decline", sw: "Kataa" },
   approved: { en: "Approved", sw: "Imeidhinishwa" },
@@ -134,6 +146,14 @@ export const dict = {
   awaiting: { en: "Awaiting review", sw: "Inasubiri ukaguzi" },
   revision: { en: "Revision requested", sw: "Marekebisho yameombwa" },
   requestRevision: { en: "Request revision", sw: "Omba marekebisho" },
+  waitingNewVideo: {
+    en: "Waiting for the creator's new video",
+    sw: "Inasubiri video mpya ya mtayarishi",
+  },
+  revisionForVideo: {
+    en: "For {name}'s video, {date}",
+    sw: "Kwa video ya {name}, {date}",
+  },
   revisionComment: { en: "What should the creator change?", sw: "Mtayarishi abadilishe nini?" },
   send: { en: "Send", sw: "Tuma" },
   cancel: { en: "Cancel", sw: "Ghairi" },
@@ -147,8 +167,9 @@ export const dict = {
   earningsBeforeFee: { en: "Earnings before fee", sw: "Mapato kabla ya ada" },
   shareCap: { en: "Share cap", sw: "Kikomo cha sehemu" },
   total: { en: "Total", sw: "Jumla" },
-  viewsOverTime: { en: "Views over time", sw: "Mitazamo kwa muda" },
+  viewsOverTime: { en: "Views over time (cumulative)", sw: "Mitazamo kwa muda (jumla)" },
   ledger: { en: "Escrow ledger", sw: "Daftari la escrow" },
+  inEscrow: { en: "In escrow", sw: "Kwenye escrow" },
   funded: { en: "Funded", sw: "Imelipiwa" },
   paidOut: { en: "Paid out to creators", sw: "Imelipwa kwa watayarishi" },
   fee: { en: "Platform fee", sw: "Ada ya jukwaa" },
@@ -183,9 +204,13 @@ export const dict = {
   viewProfile: { en: "View profile", sw: "Tazama wasifu" },
   followersByPlatform: { en: "Followers by platform", sw: "Wafuasi kwa jukwaa" },
   about: { en: "About", sw: "Kuhusu" },
-  viewsToVerifyRecent: {
-    en: "To verify (last 7 days)",
-    sw: "Ya kuthibitisha (siku 7 zilizopita)",
+  countingUntilCheckpoint: {
+    en: "Counting until checkpoint",
+    sw: "Inahesabiwa hadi kituo",
+  },
+  countingNote: {
+    en: "These views aren't paid yet.",
+    sw: "Mitazamo hii bado haijalipwa.",
   },
   pending: { en: "Pending", sw: "Inasubiri" },
   status: { en: "Status", sw: "Hali" },
@@ -199,6 +224,7 @@ export const dict = {
   revisionSaved: { en: "Revision request saved.", sw: "Ombi la marekebisho limehifadhiwa." },
   thumbnail: { en: "Video thumbnail", sw: "Picha ndogo ya video" },
   openPost: { en: "Open post in a new tab", sw: "Fungua chapisho kwenye tab mpya" },
+  viewPostOn: { en: "View post on", sw: "Tazama chapisho kwenye" },
   slotsFilled: { en: "creator slots filled", sw: "nafasi za watayarishi zimejazwa" },
   ofCap: { en: "of share cap", sw: "ya kikomo cha sehemu" },
   emptyPayments: { en: "No ledger entries yet.", sw: "Bado hakuna maingizo ya daftari." },
@@ -217,13 +243,31 @@ interface Ctx {
 
 const AppCtx = createContext<Ctx | null>(null);
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>("en");
+function readCookieLang(): Lang {
+  if (typeof document === "undefined") return "en";
+  return document.cookie.split("; ").includes(`${LANG_COOKIE}=sw`) ? "sw" : "en";
+}
+
+export function AppProvider({
+  children,
+  initialLang,
+}: {
+  children: ReactNode;
+  initialLang?: Lang;
+}) {
+  const [lang, setLangState] = useState<Lang>(initialLang ?? readCookieLang);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     document.documentElement.classList.toggle("light", theme === "light");
     document.documentElement.lang = lang;
   }, [theme, lang]);
+
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    if (typeof document !== "undefined")
+      document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=31536000; samesite=lax`;
+  };
+
   return (
     <AppCtx.Provider
       value={{

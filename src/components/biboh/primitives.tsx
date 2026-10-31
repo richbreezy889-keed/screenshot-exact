@@ -73,7 +73,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-5 shadow-soft",
+        "flex h-full flex-col rounded-2xl border p-5 shadow-soft",
         hero ? "border-transparent bg-gradient-brand text-primary-foreground" : "bg-card",
       )}
     >
@@ -85,7 +85,7 @@ export function StatCard({
           {icon}
         </span>
       </div>
-      <p className="mt-3 truncate whitespace-nowrap font-display text-xl font-bold tnum sm:text-2xl xl:text-3xl">
+      <p className="mt-auto truncate whitespace-nowrap pt-3 font-display text-xl font-bold tnum sm:text-2xl xl:text-3xl">
         {value}
       </p>
     </div>

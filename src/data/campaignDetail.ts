@@ -16,6 +16,8 @@ export interface Submission {
 export interface ResultRow {
   creatorId: string;
   postUrl: string;
+  /** ISO date the creator posted the video. Checkpoint = postedAt + 7 days. */
+  postedAt: string;
   views: number;
 }
 export interface LedgerEntry {
@@ -56,12 +58,32 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
       { id: "s4", creatorId: "u4", submitted: "2026-10-20", status: "awaiting" },
     ],
     results: [
-      { creatorId: "u1", postUrl: "https://tiktok.com/@neemaglow/video/7421", views: 84_600 },
-      { creatorId: "u8", postUrl: "https://tiktok.com/@imanibeauty/video/7402", views: 96_200 },
-      { creatorId: "u13", postUrl: "https://tiktok.com/@nadiabeauty/video/7409", views: 120_400 },
-      { creatorId: "u4", postUrl: "https://tiktok.com/@rehemacheka/video/7398", views: 60_000 },
+      {
+        creatorId: "u1",
+        postUrl: "https://tiktok.com/@neemaglow/video/7421",
+        postedAt: "2026-10-10",
+        views: 84_600,
+      },
+      {
+        creatorId: "u8",
+        postUrl: "https://tiktok.com/@imanibeauty/video/7402",
+        postedAt: "2026-10-12",
+        views: 96_200,
+      },
+      {
+        creatorId: "u13",
+        postUrl: "https://tiktok.com/@nadiabeauty/video/7409",
+        postedAt: "2026-10-18",
+        views: 120_400,
+      },
+      {
+        creatorId: "u4",
+        postUrl: "https://tiktok.com/@rehemacheka/video/7398",
+        postedAt: "2026-10-20",
+        views: 60_000,
+      },
     ],
-    viewsOverTime: series(361_200),
+    viewsOverTime: series(180_800),
   },
   c2: {
     applicants: [
@@ -83,10 +105,26 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
       },
     ],
     results: [
-      { creatorId: "u3", postUrl: "https://tiktok.com/@jumakula/video/7350", views: 95_000 },
-      { creatorId: "u7", postUrl: "https://instagram.com/p/farajicooks-kilele", views: 140_000 },
+      {
+        creatorId: "u3",
+        postUrl: "https://tiktok.com/@jumakula/video/7350",
+        postedAt: "2026-10-08",
+        views: 95_000,
+      },
+      {
+        creatorId: "u16",
+        postUrl: "https://instagram.com/p/isayaeats-kilele",
+        postedAt: "2026-10-11",
+        views: 45_000,
+      },
+      {
+        creatorId: "u7",
+        postUrl: "https://instagram.com/p/farajicooks-kilele",
+        postedAt: "2026-10-19",
+        views: 140_000,
+      },
     ],
-    viewsOverTime: series(235_000),
+    viewsOverTime: series(140_000),
   },
   c3: {
     applicants: [
@@ -108,11 +146,26 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
       { id: "s8", creatorId: "u6", submitted: "2026-10-06", status: "approved" },
     ],
     results: [
-      { creatorId: "u2", postUrl: "https://tiktok.com/@baraka.fits/video/7301", views: 62_400 },
-      { creatorId: "u6", postUrl: "https://tiktok.com/@zawadistyle/video/7302", views: 70_200 },
-      { creatorId: "u21", postUrl: "https://tiktok.com/@aminastyles/video/7315", views: 88_000 },
+      {
+        creatorId: "u2",
+        postUrl: "https://tiktok.com/@baraka.fits/video/7301",
+        postedAt: "2026-10-09",
+        views: 62_400,
+      },
+      {
+        creatorId: "u6",
+        postUrl: "https://tiktok.com/@zawadistyle/video/7302",
+        postedAt: "2026-10-13",
+        views: 70_200,
+      },
+      {
+        creatorId: "u21",
+        postUrl: "https://tiktok.com/@aminastyles/video/7315",
+        postedAt: "2026-10-19",
+        views: 88_000,
+      },
     ],
-    viewsOverTime: series(220_600),
+    viewsOverTime: series(132_600),
   },
   c4: {
     applicants: [
@@ -130,9 +183,24 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
       { id: "s11", creatorId: "u17", submitted: "2026-09-15", status: "approved" },
     ],
     results: [
-      { creatorId: "u3", postUrl: "https://tiktok.com/@jumakula/video/7210", views: 60_000 },
-      { creatorId: "u16", postUrl: "https://instagram.com/p/isayaeats-darbites", views: 72_500 },
-      { creatorId: "u17", postUrl: "https://instagram.com/p/lisamango-darbites", views: 95_000 },
+      {
+        creatorId: "u3",
+        postUrl: "https://tiktok.com/@jumakula/video/7210",
+        postedAt: "2026-08-20",
+        views: 60_000,
+      },
+      {
+        creatorId: "u16",
+        postUrl: "https://instagram.com/p/isayaeats-darbites",
+        postedAt: "2026-08-28",
+        views: 72_500,
+      },
+      {
+        creatorId: "u17",
+        postUrl: "https://instagram.com/p/lisamango-darbites",
+        postedAt: "2026-09-10",
+        views: 95_000,
+      },
     ],
     viewsOverTime: series(227_500),
   },
@@ -148,8 +216,18 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
       { id: "s13", creatorId: "u31", submitted: "2026-08-11", status: "approved" },
     ],
     results: [
-      { creatorId: "u4", postUrl: "https://tiktok.com/@rehemacheka/video/7102", views: 90_000 },
-      { creatorId: "u31", postUrl: "https://tiktok.com/@bellaskits/video/7103", views: 135_000 },
+      {
+        creatorId: "u4",
+        postUrl: "https://tiktok.com/@rehemacheka/video/7102",
+        postedAt: "2026-08-05",
+        views: 90_000,
+      },
+      {
+        creatorId: "u31",
+        postUrl: "https://tiktok.com/@bellaskits/video/7103",
+        postedAt: "2026-08-11",
+        views: 135_000,
+      },
     ],
     viewsOverTime: series(225_000),
   },

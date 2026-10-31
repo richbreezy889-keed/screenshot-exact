@@ -1,6 +1,4 @@
 import { campaigns } from "@/data/campaigns";
-import { campaignDetails } from "@/data/campaignDetail";
-import { recentViews } from "@/lib/views";
 
 export interface DailyPoint {
   date: string;
@@ -73,50 +71,3 @@ export const attentionTab: Record<AttentionKind, "content" | "results" | "applic
   verifyViews: "results",
   applicants: "applicants",
 };
-
-// Counts are derived from the campaign detail data so the dashboard and the
-// campaign pages can never disagree.
-const awaitingVideos = (id: string) =>
-  (campaignDetails[id]?.submissions ?? []).filter((s) => s.status === "awaiting").length;
-
-const pendingApplicants = (id: string) =>
-  (campaignDetails[id]?.applicants ?? []).filter((a) => a.status === "pending").length;
-
-// Only the most recent week of the campaign's cumulative series is waiting for
-// verification, not the whole lifetime total.
-const checkpointViews = (id: string) => recentViews(campaignDetails[id]?.viewsOverTime ?? [], 7);
-
-export const attentionItems: AttentionItem[] = [
-  {
-    id: "a1",
-    kind: "approveVideo",
-    campaignId: "c1",
-    campaign: "Zuri Glow Serum Launch",
-    creator: "Neema Mushi",
-    count: awaitingVideos("c1"),
-  },
-  {
-    id: "a2",
-    kind: "verifyViews",
-    campaignId: "c3",
-    campaign: "Mtaani Wear Street Drop",
-    creator: "",
-    count: checkpointViews("c3"),
-  },
-  {
-    id: "a3",
-    kind: "applicants",
-    campaignId: "c2",
-    campaign: "Kilele Morning Ritual",
-    creator: "",
-    count: pendingApplicants("c2"),
-  },
-  {
-    id: "a4",
-    kind: "approveVideo",
-    campaignId: "c2",
-    campaign: "Kilele Morning Ritual",
-    creator: "Juma Kassim",
-    count: awaitingVideos("c2"),
-  },
-];

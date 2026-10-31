@@ -15,3 +15,27 @@ export function formatDate(iso: string, lang: "en" | "sw") {
     year: "numeric",
   });
 }
+
+const SHORT_MONTHS = {
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  sw: ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ago", "Sep", "Okt", "Nov", "Des"],
+} as const;
+
+/** Short day + month for chart axes, e.g. "23 Sep" / "23 Okt". */
+export function formatDayMonth(iso: string, lang: "en" | "sw") {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return `${date.getUTCDate()} ${SHORT_MONTHS[lang][date.getUTCMonth()]}`;
+}
+
+/** Human platform name for a post URL, falling back to the bare host. */
+export function postPlatform(url: string) {
+  try {
+    const host = new URL(url).host.replace(/^www\./, "").toLowerCase();
+    if (host === "tiktok.com" || host.endsWith(".tiktok.com")) return "TikTok";
+    if (host === "instagram.com" || host.endsWith(".instagram.com")) return "Instagram";
+    return host;
+  } catch {
+    return url;
+  }
+}
