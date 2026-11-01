@@ -223,6 +223,21 @@ describe("campaign money consistency", () => {
     // Total spend must be the money actually paid to creators, not a separate figure.
     expect(stats.spend).toBe(spent);
   });
+
+  it("never pays a row above its creator cap and sums capped rows to gross", () => {
+    for (const campaign of campaigns) {
+      const { cap, rows, gross } = campaignRollup(campaign);
+      expect(cap, `${campaign.id} cap`).toBe(Math.floor(campaign.budget / campaign.creatorsNeeded));
+      for (const row of rows) {
+        expect(row.earnings, `${campaign.id} → ${row.creatorId} above cap`).toBeLessThanOrEqual(
+          cap,
+        );
+      }
+      const rowSum = rows.reduce((sum, row) => sum + row.earnings, 0);
+      expect(rowSum, `${campaign.id} capped row sum`).toBe(gross);
+      expect(gross, `${campaign.id} gross`).toBe(campaign.spent);
+    }
+  });
 });
 
 describe("campaign c2 checkpoint rows", () => {

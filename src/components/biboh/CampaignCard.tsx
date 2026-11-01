@@ -1,15 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, Users } from "lucide-react";
 import type { Campaign } from "@/data/campaigns";
+import { campaignBudgetBreakdown } from "@/lib/api";
 import { useApp } from "@/lib/i18n";
 import { formatDate, formatViews } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { MoneyText, StatusBadge } from "./primitives";
+import { BudgetBar, MoneyText, StatusBadge } from "./primitives";
 
 export function CampaignCard({ c }: { c: Campaign }) {
   const { t, lang } = useApp();
   const isDraft = c.status === "draft";
-  const usedPct = c.budget ? Math.min(100, (c.spent / c.budget) * 100) : 0;
+  const breakdown = campaignBudgetBreakdown(c);
+  const committed = breakdown.spent + breakdown.reserved;
+  const usedPct = c.budget ? Math.min(100, (committed / c.budget) * 100) : 0;
 
   return (
     <Link
@@ -55,7 +58,7 @@ export function CampaignCard({ c }: { c: Campaign }) {
                 isDraft ? "text-foreground" : "text-success",
               )}
             >
-              <MoneyText value={isDraft ? c.budget : c.budget - c.spent} />
+              <MoneyText value={isDraft ? c.budget : breakdown.left} />
             </dd>
           </div>
           <div className="flex items-center gap-2">
@@ -75,19 +78,13 @@ export function CampaignCard({ c }: { c: Campaign }) {
         </dl>
         {!isDraft && (
           <div className="mt-4 space-y-1.5">
-            <div
-              className="h-1.5 overflow-hidden rounded-full bg-secondary"
-              role="progressbar"
-              aria-label={`${t("budget")} ${t("budgetUsed")}`}
-              aria-valuenow={Math.round(usedPct)}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <div
-                className="h-full rounded-full bg-gradient-brand"
-                style={{ width: `${usedPct}%` }}
-              />
-            </div>
+            <BudgetBar
+              spent={breakdown.spent}
+              reserved={breakdown.reserved}
+              budget={breakdown.budget}
+              completed={c.status === "completed"}
+              split
+            />
             <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <span>
                 {Math.round(usedPct)}% {t("budgetUsed")}

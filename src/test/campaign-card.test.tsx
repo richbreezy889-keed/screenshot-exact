@@ -57,22 +57,27 @@ describe("CampaignCard", () => {
     expect(screen.queryByText("0 views")).not.toBeInTheDocument();
   });
 
-  it("shows a thin budget-used bar and verified views on live campaigns", () => {
+  it("shows a three-part budget bar and verified views on live campaigns", () => {
     renderCard(campaign("c1"));
 
     expect(screen.getByText("Budget remaining")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "16");
-    expect(screen.getByText("16% used")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "32");
+    expect(screen.getByText("32% used")).toBeInTheDocument();
     expect(screen.getByText("180.8K verified views")).toBeInTheDocument();
+    expect(screen.getByText("Reserved")).toBeInTheDocument();
+    // The live third segment reads "Left", rendered in the split legend and as the legend dot.
+    expect(screen.getAllByText("Left").length).toBeGreaterThan(0);
   });
 
-  it("shows the bar and views on completed campaigns", () => {
+  it("shows the bar and views on completed campaigns without a reserved segment", () => {
     renderCard(campaign("c4"));
 
     expect(screen.getByText("Returned to you")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "37");
     expect(screen.getByText("37% used")).toBeInTheDocument();
     expect(screen.getByText("227.5K verified views")).toBeInTheDocument();
+    expect(screen.queryByText("Reserved")).not.toBeInTheDocument();
+    expect(screen.getByText("Returned")).toBeInTheDocument();
   });
 
   it("localises the draft budget label and badge", () => {
