@@ -66,6 +66,8 @@ export const dict = {
   },
   topUp: { en: "Top up", sw: "Ongeza salio" },
   topUpConfirm: { en: "Confirm top-up", sw: "Thibitisha kuongeza" },
+  topUpDone: { en: "Done", sw: "Sawa" },
+  topUpAddedVia: { en: "added via", sw: "iliyongezwa kupitia" },
   uploadLogo: { en: "Upload logo", sw: "Piga upau" },
   topUpTitle: { en: "Top up your wallet", sw: "Ongeza salio la pochi yako" },
   topUpDescription: {

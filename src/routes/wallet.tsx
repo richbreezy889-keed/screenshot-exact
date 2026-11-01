@@ -59,12 +59,12 @@ export const Route = createFileRoute("/wallet")({
   component: WalletPage,
 });
 
-function WalletPage() {
+export function WalletPage() {
   const { t, lang } = useApp();
   const [topUps, setTopUps] = useState<MockTopUp[]>([]);
   const snapshot = useMemo(() => walletSnapshot(topUps), [topUps]);
   const [topUpOpen, setTopUpOpen] = useState(false);
-  const [topUpAmountStr, setTopUpAmountStr] = useState("100000");
+  const [topUpAmount, setTopUpAmount] = useState(100_000);
   const [topUpMethod, setTopUpMethod] = useState("M-Pesa");
   const [topUpPhone, setTopUpPhone] = useState("");
   const [topUpError, setTopUpError] = useState<string | null>(null);
@@ -78,9 +78,10 @@ function WalletPage() {
     };
   }, []);
 
-  const amount = Number(topUpAmountStr);
+  const amount = topUpAmount;
   const methodNeedsPhone = topUpMethod !== "Bank transfer";
-  const amountValid = Number.isFinite(amount) && amount >= TOP_UP_MIN && amount <= TOP_UP_MAX;
+  const amountValid = topUpAmount >= TOP_UP_MIN && topUpAmount <= TOP_UP_MAX;
+  const phoneValid = !methodNeedsPhone || /^(\+255|0)\d{9}$/.test(topUpPhone.replace(/[\s-]/g, ""));
 
   const addTopUp = (value: number, method: string) => {
     setTopUps((prev) => [
@@ -90,8 +91,6 @@ function WalletPage() {
   };
 
   const submitTopUp = () => {
-    const phoneValid =
-      !methodNeedsPhone || /^(\+255|0)\d{9}$/.test(topUpPhone.replace(/[\s-]/g, ""));
     if (!amountValid) {
       setTopUpError(t("invalidAmount"));
       return;
@@ -103,7 +102,7 @@ function WalletPage() {
     setTopUpError(null);
     setTopUpStage("waiting");
     timerRef.current = window.setTimeout(() => {
-      const value = Math.max(TOP_UP_MIN, Math.min(TOP_UP_MAX, Math.round(amount)));
+      const value = Math.max(TOP_UP_MIN, Math.min(TOP_UP_MAX, Math.round(topUpAmount)));
       addTopUp(value, topUpMethod);
       setTopUpStage("success");
       toast.success(t("topUpSuccess"), { description: t("topUpSuccessBody") });
@@ -300,8 +299,10 @@ function WalletPage() {
                   id="topup-amount"
                   type="text"
                   inputMode="numeric"
-                  value={topUpAmountStr}
-                  onChange={(e) => setTopUpAmountStr(e.target.value.replace(/[^0-9]/g, ""))}
+                  value={topUpAmount ? topUpAmount.toLocaleString("en-US") : ""}
+                  onChange={(e) =>
+                    setTopUpAmount(Math.max(0, Number(e.target.value.replace(/[^0-9]/g, "")) || 0))
+                  }
                 />
                 <div className="flex flex-wrap gap-2">
                   {QUICK_AMOUNTS.map((value) => (
@@ -310,10 +311,12 @@ function WalletPage() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className={amount === value ? "" : "bg-transparent"}
-                      onClick={() => setTopUpAmountStr(String(value))}
+                      className={topUpAmount === value ? "" : "bg-transparent"}
+                      onClick={() => setTopUpAmount(value)}
                     >
-                      {Math.round(value / 1000)}K
+                      {value >= 1_000_000
+                        ? `${Math.round(value / 1_000_000)}M`
+                        : `${Math.round(value / 1000)}K`}
                     </Button>
                   ))}
                 </div>
@@ -354,13 +357,29 @@ function WalletPage() {
                   {topUpError}
                 </p>
               )}
+              {!topUpError && topUpStage === "form" && !amountValid && (
+                <p className="text-sm text-destructive" role="alert">
+                  {t("invalidAmount")}
+                </p>
+              )}
+              {!topUpError && topUpStage === "form" && methodNeedsPhone && !phoneValid && (
+                <p className="text-sm text-destructive" role="alert">
+                  {t("invalidPhone")}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">{t("selcomNote")}</p>
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={closeTopUp}>
                   {t("cancel")}
                 </Button>
-                <Button type="button" onClick={submitTopUp} disabled={topUpStage !== "form"}>
+                <Button
+                  type="button"
+                  onClick={submitTopUp}
+                  disabled={
+                    topUpStage !== "form" || !amountValid || (methodNeedsPhone && !phoneValid)
+                  }
+                >
                   {t("topUpConfirm")}
                 </Button>
               </div>
@@ -383,8 +402,14 @@ function WalletPage() {
               <ShieldCheck className="mx-auto h-8 w-8 text-success" aria-hidden />
               <p className="font-medium">{t("topUpSuccess")}</p>
               <p className="text-sm text-muted-foreground">{t("topUpSuccessBody")}</p>
+              <p className="text-sm text-muted-foreground">
+                TZS {topUpAmount.toLocaleString("en-US")} {t("topUpAddedVia")} {topUpMethod}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {`TU-${MOCK_TODAY}-${String(Math.max(1, topUps.length + 1)).padStart(4, "0")}`}
+              </p>
               <Button type="button" onClick={closeTopUp}>
-                {t("topUp")}
+                {t("topUpDone")}
               </Button>
             </div>
           )}
