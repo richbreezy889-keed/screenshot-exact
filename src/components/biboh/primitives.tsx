@@ -6,6 +6,7 @@ import { useApp } from "@/lib/i18n";
 import type { CampaignStatus } from "@/data/campaigns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function MoneyText({
   value,
@@ -109,43 +110,73 @@ export function BudgetBar({
   const spentPct = budget ? Math.min(100, (spent / budget) * 100) : 0;
   const reservedPct = budget ? Math.min(100 - spentPct, (reserved / budget) * 100) : 0;
   const left = Math.max(0, budget - spent - reserved);
+  const leftPct = budget ? Math.max(0, 100 - spentPct - reservedPct) : 0;
   return (
-    <div>
-      <div
-        className="flex h-2 overflow-hidden rounded-full bg-secondary"
-        role="progressbar"
-        aria-valuenow={Math.round(spentPct + reservedPct)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div className="h-full bg-gradient-brand" style={{ width: `${spentPct}%` }} />
-        <div className="h-full bg-warning" style={{ width: `${reservedPct}%` }} />
+    <TooltipProvider delayDuration={150}>
+      <div>
+        <div
+          className="flex h-2 overflow-hidden rounded-full bg-secondary"
+          role="progressbar"
+          aria-valuenow={Math.round(spentPct + reservedPct)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="h-full bg-gradient-brand" style={{ width: `${spentPct}%` }} />
+          <div className="h-full bg-warning" style={{ width: `${reservedPct}%` }} />
+          <div className="h-full bg-success/35" style={{ width: `${leftPct}%` }} />
+        </div>
+        {split ? (
+          <>
+            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span>
+                <MoneyText value={spent} /> {t("budgetSpent")}
+              </span>
+              <span>
+                <MoneyText value={reserved} className="text-warning" /> {t("budgetReserved")}
+              </span>
+              <span>
+                <MoneyText value={left} className="text-success" />{" "}
+                {completed ? t("returnedShort") : t("budgetLeftToReturn")}
+              </span>
+            </div>
+            {!completed && (
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                <LegendDot className="bg-gradient-brand" label={t("budgetSpent")} />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex cursor-help items-center gap-1.5 underline decoration-dotted underline-offset-2">
+                      <span className="h-2 w-2 rounded-full bg-warning" aria-hidden />
+                      {t("reservedShort")}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-64">{t("reservedHelp")}</TooltipContent>
+                </Tooltip>
+                <LegendDot className="bg-success/50" label={t("budgetLeftShort")} />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
+            <span>
+              <MoneyText value={spent} /> {t("budgetUsed")}
+            </span>
+            <span>
+              <MoneyText value={budget - spent} className="text-success" />{" "}
+              {completed ? t("returned") : t("budgetLeft")}
+            </span>
+          </div>
+        )}
       </div>
-      {split ? (
-        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span>
-            <MoneyText value={spent} /> {t("budgetSpent")}
-          </span>
-          <span>
-            <MoneyText value={reserved} className="text-warning" /> {t("budgetReserved")}
-          </span>
-          <span>
-            <MoneyText value={left} className="text-success" />{" "}
-            {completed ? t("returned") : t("budgetLeftToReturn")}
-          </span>
-        </div>
-      ) : (
-        <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
-          <span>
-            <MoneyText value={spent} /> {t("budgetUsed")}
-          </span>
-          <span>
-            <MoneyText value={budget - spent} className="text-success" />{" "}
-            {completed ? t("returned") : t("budgetLeft")}
-          </span>
-        </div>
-      )}
-    </div>
+    </TooltipProvider>
+  );
+}
+
+function LegendDot({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={cn("h-2 w-2 rounded-full", className)} aria-hidden />
+      {label}
+    </span>
   );
 }
 
