@@ -114,6 +114,10 @@ export const dict = {
   topUpsFilter: { en: "Top-ups", sw: "Ongezeko" },
   escrowFilter: { en: "Escrow", sw: "Escrow" },
   paidFromEscrow: { en: "Paid from escrow", sw: "Imelipwa kutoka escrow" },
+  reservedOfWhich: {
+    en: "Of which reserved for views still counting",
+    sw: "Yoyote iliyohifadhiwa kwa mitazamo inayohesabiwa",
+  },
   payoutsFilter: { en: "Payouts", sw: "Malipo" },
   returnedFilter: { en: "Returned", sw: "Imerudishwa" },
   campaign: { en: "Campaign", sw: "Kampeni" },

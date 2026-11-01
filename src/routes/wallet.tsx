@@ -150,14 +150,17 @@ export function WalletPage() {
           help={t("balance")}
           value={<MoneyText value={snapshot.inEscrow} smallPrefix />}
           sub={
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t("budgetReserved")}: <MoneyText value={snapshot.reserved} smallPrefix />
-            </p>
+            <div className="mt-1 space-y-0.5">
+              <p className="text-xs text-muted-foreground">{t("reservedOfWhich")}</p>
+              <p className="text-xs font-semibold">
+                <MoneyText value={snapshot.reserved} smallPrefix />
+              </p>
+            </div>
           }
         />
-        <div className="rounded-2xl border bg-card p-5 shadow-soft">
+        <div className="min-w-0 rounded-2xl border bg-card p-5 shadow-soft">
           <p className="text-sm text-muted-foreground">{t("walletSpent")}</p>
-          <p className="mt-auto font-display text-2xl font-bold">
+          <p className="mt-auto w-full min-w-0 break-words font-display text-xl font-bold sm:text-2xl">
             <MoneyText value={snapshot.spent} smallPrefix />
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
