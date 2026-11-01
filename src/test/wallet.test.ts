@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeStats } from "@/lib/api";
+import { campaignBudgetBreakdown, computeStats } from "@/lib/api";
 import { campaigns } from "@/data/campaigns";
 import { MOCK_TOP_UPS, walletSnapshot, type MockTopUp } from "@/lib/wallet";
 
@@ -70,5 +70,14 @@ describe("wallet snapshot", () => {
 
   it("keeps the wallet spent total equal to the dashboard spend", () => {
     expect(computeStats(campaigns).spend).toBe(3_403_064);
+  });
+
+  it("reserves counting views across live campaigns for the escrow card", () => {
+    const snap = walletSnapshot();
+    const reserved = campaigns
+      .filter((c) => c.status === "live")
+      .reduce((sum, c) => sum + campaignBudgetBreakdown(c).reserved, 0);
+    expect(reserved).toBe(1_645_000);
+    expect(snap.reserved).toBe(reserved);
   });
 });

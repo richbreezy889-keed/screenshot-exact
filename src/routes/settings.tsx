@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Bell, Building2, KeyRound, Megaphone, Users } from "lucide-react";
+import { Bell, Building2, Globe, KeyRound, Users, type LucideIcon } from "lucide-react";
 import { useApp, type TKey } from "@/lib/i18n";
 import { Panel } from "@/components/biboh/primitives";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,9 @@ import { toast } from "sonner";
 
 type SectionId = "company" | "language" | "notifications" | "team" | "security";
 
-const SECTIONS: { id: SectionId; icon: typeof Building2; label: TKey }[] = [
+const SECTIONS: { id: SectionId; icon: LucideIcon; label: TKey }[] = [
   { id: "company", icon: Building2, label: "settingsCompany" },
-  { id: "language", icon: Megaphone, label: "settingsLanguage" },
+  { id: "language", icon: Globe, label: "settingsLanguage" },
   { id: "notifications", icon: Bell, label: "settingsNotifications" },
   { id: "team", icon: Users, label: "settingsTeam" },
   { id: "security", icon: KeyRound, label: "settingsSecurity" },
@@ -54,11 +54,13 @@ export function SettingsPage() {
   const [section, setSection] = useState<SectionId>("company");
 
   const [brandName, setBrandName] = useState("Zuri Beauty");
-  const [industry, setIndustry] = useState("");
+  const [industry, setIndustry] = useState("Beauty & cosmetics");
   const [website, setWebsite] = useState("https://zuri.example.tz");
-  const [contactPhone, setContactPhone] = useState("");
+  const [contactPhone, setContactPhone] = useState("+255712345678");
   const [contactEmail, setContactEmail] = useState("hello@zuri.example.tz");
   const [logoName, setLogoName] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [notifications, setNotifications] =
     useState<Record<string, NotificationSetting>>(NOTIFICATION_DEFAULTS);
@@ -112,9 +114,9 @@ export function SettingsPage() {
     setMembers((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const tabs: { id: SectionId; icon: typeof Building2; label: TKey }[] = [
+  const tabs: { id: SectionId; icon: LucideIcon; label: TKey }[] = [
     { id: "company", icon: Building2, label: "settingsCompany" },
-    { id: "language", icon: Megaphone, label: "settingsLanguage" },
+    { id: "language", icon: Globe, label: "settingsLanguage" },
     { id: "notifications", icon: Bell, label: "settingsNotifications" },
     { id: "team", icon: Users, label: "settingsTeam" },
     { id: "security", icon: KeyRound, label: "settingsSecurity" },
@@ -229,13 +231,33 @@ export function SettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="company-logo">{t("settingsLogo")}</Label>
-              <Input
-                id="company-logo"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setLogoName(e.target.files?.[0]?.name ?? null)}
-              />
-              {logoName && <p className="text-xs text-muted-foreground">{logoName}</p>}
+              <div className="flex items-center gap-3">
+                <span className="grid h-14 w-14 place-items-center overflow-hidden rounded-full border bg-secondary">
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt={t("settingsLogo")}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Building2 className="h-6 w-6 text-muted-foreground" aria-hidden />
+                  )}
+                </span>
+                <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
+                  {t("uploadLogo")}
+                </Button>
+                <Input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    setLogoName(file?.name ?? null);
+                    if (file) setLogoUrl(URL.createObjectURL(file));
+                  }}
+                />
+              </div>
             </div>
           </div>
           <Button type="button" onClick={saveCompany}>

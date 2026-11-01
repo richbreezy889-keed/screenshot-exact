@@ -1,5 +1,5 @@
 import { campaigns, type Campaign } from "@/data/campaigns";
-import { campaignTotals, feeSplit } from "@/lib/api";
+import { campaignBudgetBreakdown, campaignTotals, feeSplit } from "@/lib/api";
 
 export type WalletEntryKind = "topUp" | "escrow" | "payout" | "returned";
 
@@ -33,6 +33,8 @@ export interface WalletSnapshot {
   topUps: number;
   available: number;
   inEscrow: number;
+  /** Money held back for posts still inside their checkpoint window. */
+  reserved: number;
   spent: number;
   fee: number;
   returned: number;
@@ -132,6 +134,7 @@ export function walletSnapshot(extraTopUps: MockTopUp[] = []): WalletSnapshot {
   let fee = 0;
   let returned = 0;
   let inEscrow = 0;
+  let reserved = 0;
   let totalFunded = 0;
 
   campaigns.forEach((campaign, index) => {
@@ -144,6 +147,7 @@ export function walletSnapshot(extraTopUps: MockTopUp[] = []): WalletSnapshot {
       returned += campaign.budget - totals.gross;
     } else {
       inEscrow += campaign.budget - totals.gross;
+      if (campaign.status === "live") reserved += campaignBudgetBreakdown(campaign).reserved;
     }
     drafts.push(...campaignEntries(campaign, 100 + index * 10));
   });
@@ -180,6 +184,7 @@ export function walletSnapshot(extraTopUps: MockTopUp[] = []): WalletSnapshot {
     topUps: topUpTotal,
     available: topUpTotal - totalFunded + returned,
     inEscrow,
+    reserved,
     spent,
     fee,
     returned,

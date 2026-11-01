@@ -150,6 +150,11 @@ function WalletPage() {
           label={t("inEscrow")}
           help={t("balance")}
           value={<MoneyText value={snapshot.inEscrow} smallPrefix />}
+          sub={
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("budgetReserved")}: <MoneyText value={snapshot.reserved} smallPrefix />
+            </p>
+          }
         />
         <div className="rounded-2xl border bg-card p-5 shadow-soft">
           <p className="text-sm text-muted-foreground">{t("walletSpent")}</p>
@@ -220,8 +225,23 @@ function WalletPage() {
                     )}
                   </td>
                   <td className="py-2 pr-3 font-semibold">
-                    {entry.amount >= 0 ? "+" : "−"}
-                    <MoneyText value={Math.abs(entry.amount)} />
+                    {entry.kind === "payout" ? (
+                      <span className="font-medium text-muted-foreground">
+                        <MoneyText value={Math.abs(entry.amount)} />
+                        <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                          {t("paidFromEscrow")}
+                        </span>
+                      </span>
+                    ) : (
+                      <span
+                        className={
+                          entry.amount >= 0 ? "font-semibold text-success" : "font-semibold"
+                        }
+                      >
+                        {entry.amount >= 0 ? "+" : "−"}
+                        <MoneyText value={Math.abs(entry.amount)} />
+                      </span>
+                    )}
                     {entry.kind === "payout" && (
                       <div className="mt-1 text-xs font-normal text-muted-foreground">
                         {t("fee")}: <MoneyText value={entry.fee ?? 0} /> · {t("netToCreator")}:{" "}
@@ -245,10 +265,19 @@ function WalletPage() {
             <li key={entry.id} className="space-y-1 py-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-medium">{kindLabel(entry.kind)}</p>
-                <p className={entry.amount >= 0 ? "font-semibold text-success" : "font-semibold"}>
-                  {entry.amount >= 0 ? "+" : "−"}
-                  <MoneyText value={Math.abs(entry.amount)} />
-                </p>
+                {entry.kind === "payout" ? (
+                  <p className="font-medium text-muted-foreground">
+                    <MoneyText value={Math.abs(entry.amount)} />
+                    <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                      {t("paidFromEscrow")}
+                    </span>
+                  </p>
+                ) : (
+                  <p className={entry.amount >= 0 ? "font-semibold text-success" : "font-semibold"}>
+                    {entry.amount >= 0 ? "+" : "−"}
+                    <MoneyText value={Math.abs(entry.amount)} />
+                  </p>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">{formatDate(entry.date, lang)}</p>
             </li>
@@ -370,11 +399,13 @@ function WalletStat({
   help,
   value,
   hero,
+  sub,
 }: {
   label: string;
   help: string;
   value: ReactNode;
   hero?: boolean;
+  sub?: ReactNode;
 }) {
   return (
     <div
@@ -385,6 +416,7 @@ function WalletStat({
       <p className={`text-sm ${hero ? "opacity-90" : "text-muted-foreground"}`}>{label}</p>
       <p className="mt-auto pt-3 font-display text-xl font-bold">{value}</p>
       <p className={`mt-1 text-xs ${hero ? "opacity-90" : "text-muted-foreground"}`}>{help}</p>
+      {sub}
     </div>
   );
 }

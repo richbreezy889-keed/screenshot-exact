@@ -66,6 +66,7 @@ export const dict = {
   },
   topUp: { en: "Top up", sw: "Ongeza salio" },
   topUpConfirm: { en: "Confirm top-up", sw: "Thibitisha kuongeza" },
+  uploadLogo: { en: "Upload logo", sw: "Piga upau" },
   topUpTitle: { en: "Top up your wallet", sw: "Ongeza salio la pochi yako" },
   topUpDescription: {
     en: "Add money to your Biboh wallet to fund more campaigns.",
@@ -110,6 +111,7 @@ export const dict = {
   },
   topUpsFilter: { en: "Top-ups", sw: "Ongezeko" },
   escrowFilter: { en: "Escrow", sw: "Escrow" },
+  paidFromEscrow: { en: "Paid from escrow", sw: "Imelipwa kutoka escrow" },
   payoutsFilter: { en: "Payouts", sw: "Malipo" },
   returnedFilter: { en: "Returned", sw: "Imerudishwa" },
   campaign: { en: "Campaign", sw: "Kampeni" },
