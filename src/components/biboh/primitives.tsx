@@ -129,19 +129,19 @@ export function BudgetBar({
           <>
             <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
-                <MoneyText value={spent} /> {t("budgetSpent")}
+                <MoneyText value={spent} /> {t("spentShort")}
               </span>
               <span>
                 <MoneyText value={reserved} className="text-warning" /> {t("budgetReserved")}
               </span>
               <span>
                 <MoneyText value={left} className="text-success" />{" "}
-                {completed ? t("returnedShort") : t("budgetLeftToReturn")}
+                {completed ? t("returnedShort") : t("budgetLeftShort")}
               </span>
             </div>
             {!completed && (
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                <LegendDot className="bg-gradient-brand" label={t("budgetSpent")} />
+                <LegendDot className="bg-gradient-brand" label={t("spentShort")} />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-help items-center gap-1.5 underline decoration-dotted underline-offset-2">

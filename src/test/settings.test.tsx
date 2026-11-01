@@ -47,9 +47,14 @@ describe("settings page", () => {
     fireEvent.click(screen.getByText("Team"));
     fireEvent.click(screen.getByText("Invite member"));
 
+    const submit = screen.getByText("Send invite");
+    expect(submit).toBeDisabled();
+
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Zainabu S" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "zainabu@zuri.co.tz" } });
-    fireEvent.click(screen.getByText("Member invited."));
+    expect(submit).toBeEnabled();
+
+    fireEvent.click(submit);
 
     expect(screen.getByText("Zainabu S")).toBeInTheDocument();
   });

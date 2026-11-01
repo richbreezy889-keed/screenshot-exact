@@ -469,7 +469,7 @@ export function SettingsPage() {
               onClick={inviteMember}
               disabled={!inviteName.trim() || !EMAIL_RE.test(inviteEmail)}
             >
-              {t("teamInviteSuccess")}
+              {t("sendInvite")}
             </Button>
           </div>
         </DialogContent>

@@ -65,7 +65,8 @@ describe("CampaignCard", () => {
     expect(screen.getByText("32% used")).toBeInTheDocument();
     expect(screen.getByText("180.8K verified views")).toBeInTheDocument();
     expect(screen.getByText("Reserved")).toBeInTheDocument();
-    expect(screen.getByText("Left")).toBeInTheDocument();
+    // The live third segment reads "Left", rendered in the split legend and as the legend dot.
+    expect(screen.getAllByText("Left").length).toBeGreaterThan(0);
   });
 
   it("shows the bar and views on completed campaigns without a reserved segment", () => {
