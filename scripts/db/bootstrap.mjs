@@ -8,12 +8,16 @@ export const repoRoot = path.resolve(scriptDir, "../..");
 export const migrationsDir = path.join(repoRoot, "supabase", "migrations");
 
 // Mirrors the grants a hosted Supabase project gives the Data API roles.
-// RLS still decides which rows each role can see or change.
-const DATA_API_GRANTS = `
+// These are default privileges so migrations can still REVOKE access to an
+// individual table or view after it is created. RLS decides the rows.
+const DEFAULT_PRIVILEGES = `
   grant usage on schema public to anon, authenticated, service_role;
-  grant all on all tables in schema public to anon, authenticated, service_role;
-  grant usage, select on all sequences in schema public to anon, authenticated, service_role;
-  grant execute on all functions in schema public to anon, authenticated, service_role;
+  alter default privileges in schema public
+    grant all on tables to anon, authenticated, service_role;
+  alter default privileges in schema public
+    grant all on sequences to anon, authenticated, service_role;
+  alter default privileges in schema public
+    grant execute on functions to anon, authenticated, service_role;
 `;
 
 export async function listMigrations() {
@@ -36,6 +40,7 @@ export async function createDatabase({ dataDir } = {}) {
 
   const shim = await readFile(path.join(scriptDir, "shim.sql"), "utf8");
   await db.exec(shim);
+  await db.exec(DEFAULT_PRIVILEGES);
 
   const migrations = await listMigrations();
   for (const file of migrations) {
@@ -47,6 +52,5 @@ export async function createDatabase({ dataDir } = {}) {
     }
   }
 
-  await db.exec(DATA_API_GRANTS);
   return { db, migrations };
 }

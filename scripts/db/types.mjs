@@ -72,6 +72,7 @@ function renderTable(columns, enums, mode) {
       const optional = nullable || column.column_default !== null || column.is_identity === "YES";
       lines.push(columnLine(quote(column.column_name), columnType(column, enums), nullable, optional));
     } else if (mode === "update") {
+      if (column.is_generated === "ALWAYS") continue;
       lines.push(columnLine(quote(column.column_name), columnType(column, enums), nullable, true));
     } else {
       lines.push(columnLine(quote(column.column_name), columnType(column, enums), nullable, false));

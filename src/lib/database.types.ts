@@ -12,6 +12,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      applications: {
+        Row: {
+        "id": string;
+        "campaign_id": string;
+        "creator_id": string;
+        "status": Database["public"]["Enums"]["application_status"];
+        "pitch": string | null;
+        "reviewed_by": string | null;
+        "reviewed_at": string | null;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "id"?: string;
+        "campaign_id": string;
+        "creator_id": string;
+        "status"?: Database["public"]["Enums"]["application_status"];
+        "pitch"?: string | null;
+        "reviewed_by"?: string | null;
+        "reviewed_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: string;
+        "campaign_id"?: string;
+        "creator_id"?: string;
+        "status"?: Database["public"]["Enums"]["application_status"];
+        "pitch"?: string | null;
+        "reviewed_by"?: string | null;
+        "reviewed_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
       brand_members: {
         Row: {
         "brand_id": string;
@@ -70,6 +105,63 @@ export type Database = {
         "updated_at"?: string;
         };
       };
+      campaigns: {
+        Row: {
+        "id": string;
+        "brand_id": string;
+        "created_by": string;
+        "title": string;
+        "brief": string | null;
+        "status": Database["public"]["Enums"]["campaign_status"];
+        "platforms": Database["public"]["Enums"]["social_platform"][];
+        "niche": string | null;
+        "rate_per_1k": number;
+        "budget": number;
+        "creators_needed": number;
+        "max_videos_per_creator": number;
+        "creator_cap": number | null;
+        "deadline": string;
+        "published_at": string | null;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "id"?: string;
+        "brand_id": string;
+        "created_by"?: string;
+        "title": string;
+        "brief"?: string | null;
+        "status"?: Database["public"]["Enums"]["campaign_status"];
+        "platforms"?: Database["public"]["Enums"]["social_platform"][];
+        "niche"?: string | null;
+        "rate_per_1k": number;
+        "budget": number;
+        "creators_needed": number;
+        "max_videos_per_creator"?: number;
+        "deadline": string;
+        "published_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: string;
+        "brand_id"?: string;
+        "created_by"?: string;
+        "title"?: string;
+        "brief"?: string | null;
+        "status"?: Database["public"]["Enums"]["campaign_status"];
+        "platforms"?: Database["public"]["Enums"]["social_platform"][];
+        "niche"?: string | null;
+        "rate_per_1k"?: number;
+        "budget"?: number;
+        "creators_needed"?: number;
+        "max_videos_per_creator"?: number;
+        "deadline"?: string;
+        "published_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
       creators: {
         Row: {
         "id": string;
@@ -120,6 +212,7 @@ export type Database = {
         "platform_fee_bps": number;
         "min_payout_tzs": number;
         "updated_at": string;
+        "min_rate_per_1k": number;
         };
         Insert: {
         "id"?: boolean;
@@ -129,6 +222,7 @@ export type Database = {
         "platform_fee_bps"?: number;
         "min_payout_tzs"?: number;
         "updated_at"?: string;
+        "min_rate_per_1k"?: number;
         };
         Update: {
         "id"?: boolean;
@@ -138,6 +232,7 @@ export type Database = {
         "platform_fee_bps"?: number;
         "min_payout_tzs"?: number;
         "updated_at"?: string;
+        "min_rate_per_1k"?: number;
         };
       };
       profiles: {
@@ -213,14 +308,118 @@ export type Database = {
         "updated_at"?: string;
         };
       };
+      submissions: {
+        Row: {
+        "id": string;
+        "application_id": string;
+        "campaign_id": string;
+        "creator_id": string;
+        "platform": Database["public"]["Enums"]["social_platform"];
+        "video_url": string;
+        "posted_at": string;
+        "status": Database["public"]["Enums"]["submission_status"];
+        "note": string | null;
+        "reviewed_by": string | null;
+        "reviewed_at": string | null;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "id"?: string;
+        "application_id": string;
+        "campaign_id": string;
+        "creator_id": string;
+        "platform": Database["public"]["Enums"]["social_platform"];
+        "video_url": string;
+        "posted_at": string;
+        "status"?: Database["public"]["Enums"]["submission_status"];
+        "note"?: string | null;
+        "reviewed_by"?: string | null;
+        "reviewed_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: string;
+        "application_id"?: string;
+        "campaign_id"?: string;
+        "creator_id"?: string;
+        "platform"?: Database["public"]["Enums"]["social_platform"];
+        "video_url"?: string;
+        "posted_at"?: string;
+        "status"?: Database["public"]["Enums"]["submission_status"];
+        "note"?: string | null;
+        "reviewed_by"?: string | null;
+        "reviewed_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
+      view_checkpoints: {
+        Row: {
+        "id": string;
+        "submission_id": string;
+        "checkpoint_at": string;
+        "views": number;
+        "status": Database["public"]["Enums"]["checkpoint_status"];
+        "verified_at": string | null;
+        "verified_by": string | null;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "id"?: string;
+        "submission_id": string;
+        "checkpoint_at": string;
+        "views"?: number;
+        "status"?: Database["public"]["Enums"]["checkpoint_status"];
+        "verified_at"?: string | null;
+        "verified_by"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: string;
+        "submission_id"?: string;
+        "checkpoint_at"?: string;
+        "views"?: number;
+        "status"?: Database["public"]["Enums"]["checkpoint_status"];
+        "verified_at"?: string | null;
+        "verified_by"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
     };
     Views: {
-
+      campaigns_public: {
+        Row: {
+        "id": string | null;
+        "brand_id": string | null;
+        "brand_name": string | null;
+        "title": string | null;
+        "brief": string | null;
+        "status": Database["public"]["Enums"]["campaign_status"] | null;
+        "platforms": Database["public"]["Enums"]["social_platform"][] | null;
+        "niche": string | null;
+        "rate_per_1k": number | null;
+        "creators_needed": number | null;
+        "max_videos_per_creator": number | null;
+        "deadline": string | null;
+        "created_at": string | null;
+        "updated_at": string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {};
     Enums: {
+      application_status: "pending" | "approved" | "declined" | "rejected" | "withdrawn";
+      campaign_status: "draft" | "live" | "paused" | "completed" | "cancelled";
+      checkpoint_status: "pending" | "verified" | "rejected";
       member_role: "owner" | "manager" | "viewer";
       social_platform: "tiktok" | "instagram" | "youtube" | "x" | "facebook" | "other";
+      submission_status: "awaiting" | "revision" | "approved" | "rejected";
       user_role: "admin" | "brand" | "creator";
     };
     CompositeTypes: {};
