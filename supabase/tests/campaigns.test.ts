@@ -393,12 +393,16 @@ describe("view checkpoints", () => {
 
     for (const actor of [IDS.brandAOwner, IDS.brandAManager, IDS.brandAViewer]) {
       await actAs(db, actor, "authenticated");
-      await expect(
-        db.query("update public.view_checkpoints set views = 999 where id = $1", [checkpoint.id]),
-      ).rejects.toThrow(/row-level security/);
-      await expect(
-        db.query("update public.view_checkpoints set status = 'verified' where id = $1", [checkpoint.id]),
-      ).rejects.toThrow(/row-level security/);
+      const views = await db.query(
+        "update public.view_checkpoints set views = 999 where id = $1 returning views",
+        [checkpoint.id],
+      );
+      expect(views.rows).toHaveLength(0);
+      const status = await db.query(
+        "update public.view_checkpoints set status = 'verified' where id = $1 returning status",
+        [checkpoint.id],
+      );
+      expect(status.rows).toHaveLength(0);
     }
   });
 
