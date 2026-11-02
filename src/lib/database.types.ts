@@ -12,14 +12,216 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-
+      brand_members: {
+        Row: {
+        "brand_id": string;
+        "user_id": string;
+        "role": Database["public"]["Enums"]["member_role"];
+        "invited_by": string | null;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "brand_id": string;
+        "user_id": string;
+        "role"?: Database["public"]["Enums"]["member_role"];
+        "invited_by"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "brand_id"?: string;
+        "user_id"?: string;
+        "role"?: Database["public"]["Enums"]["member_role"];
+        "invited_by"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
+      brands: {
+        Row: {
+        "id": string;
+        "name": string;
+        "description": string | null;
+        "logo_url": string | null;
+        "website": string | null;
+        "created_by": string;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "id"?: string;
+        "name": string;
+        "description"?: string | null;
+        "logo_url"?: string | null;
+        "website"?: string | null;
+        "created_by": string;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: string;
+        "name"?: string;
+        "description"?: string | null;
+        "logo_url"?: string | null;
+        "website"?: string | null;
+        "created_by"?: string;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
+      creators: {
+        Row: {
+        "id": string;
+        "display_name": string;
+        "handle": string | null;
+        "bio": string | null;
+        "niche": string | null;
+        "location": string | null;
+        "avatar_url": string | null;
+        "rating": number;
+        "past_campaigns": number;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "id": string;
+        "display_name"?: string;
+        "handle"?: string | null;
+        "bio"?: string | null;
+        "niche"?: string | null;
+        "location"?: string | null;
+        "avatar_url"?: string | null;
+        "rating"?: number;
+        "past_campaigns"?: number;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: string;
+        "display_name"?: string;
+        "handle"?: string | null;
+        "bio"?: string | null;
+        "niche"?: string | null;
+        "location"?: string | null;
+        "avatar_url"?: string | null;
+        "rating"?: number;
+        "past_campaigns"?: number;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
+      platform_settings: {
+        Row: {
+        "id": boolean;
+        "platform_name": string;
+        "support_email": string | null;
+        "default_currency": string;
+        "platform_fee_bps": number;
+        "min_payout_tzs": number;
+        "updated_at": string;
+        };
+        Insert: {
+        "id"?: boolean;
+        "platform_name"?: string;
+        "support_email"?: string | null;
+        "default_currency"?: string;
+        "platform_fee_bps"?: number;
+        "min_payout_tzs"?: number;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: boolean;
+        "platform_name"?: string;
+        "support_email"?: string | null;
+        "default_currency"?: string;
+        "platform_fee_bps"?: number;
+        "min_payout_tzs"?: number;
+        "updated_at"?: string;
+        };
+      };
+      profiles: {
+        Row: {
+        "id": string;
+        "role": Database["public"]["Enums"]["user_role"];
+        "full_name": string | null;
+        "email": string | null;
+        "phone": string | null;
+        "avatar_url": string | null;
+        "phone_verified_at": string | null;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "id": string;
+        "role"?: Database["public"]["Enums"]["user_role"];
+        "full_name"?: string | null;
+        "email"?: string | null;
+        "phone"?: string | null;
+        "avatar_url"?: string | null;
+        "phone_verified_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: string;
+        "role"?: Database["public"]["Enums"]["user_role"];
+        "full_name"?: string | null;
+        "email"?: string | null;
+        "phone"?: string | null;
+        "avatar_url"?: string | null;
+        "phone_verified_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
+      social_accounts: {
+        Row: {
+        "id": string;
+        "creator_id": string;
+        "platform": Database["public"]["Enums"]["social_platform"];
+        "handle": string;
+        "profile_url": string | null;
+        "followers": number;
+        "avg_views": number;
+        "verified_at": string | null;
+        "created_at": string;
+        "updated_at": string;
+        };
+        Insert: {
+        "id"?: string;
+        "creator_id": string;
+        "platform": Database["public"]["Enums"]["social_platform"];
+        "handle": string;
+        "profile_url"?: string | null;
+        "followers"?: number;
+        "avg_views"?: number;
+        "verified_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+        Update: {
+        "id"?: string;
+        "creator_id"?: string;
+        "platform"?: Database["public"]["Enums"]["social_platform"];
+        "handle"?: string;
+        "profile_url"?: string | null;
+        "followers"?: number;
+        "avg_views"?: number;
+        "verified_at"?: string | null;
+        "created_at"?: string;
+        "updated_at"?: string;
+        };
+      };
     };
     Views: {
 
     };
     Functions: {};
     Enums: {
-
+      member_role: "owner" | "manager" | "viewer";
+      social_platform: "tiktok" | "instagram" | "youtube" | "x" | "facebook" | "other";
+      user_role: "admin" | "brand" | "creator";
     };
     CompositeTypes: {};
   };
