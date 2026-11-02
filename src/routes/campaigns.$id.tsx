@@ -155,7 +155,7 @@ function CampaignDetail() {
   const approved = data?.approved ?? 0;
   const full = data ? !canApproveMore(approved, data.campaign.creatorsNeeded) : false;
   const pendingApplicants =
-    data?.detail.applicants.filter((a) => a.status === "pending").length ?? 0;
+    data?.detail.applicants.filter((a) => a.status === "applied").length ?? 0;
   const awaitingContent =
     data?.detail.submissions.filter((s) => s.status === "awaiting").length ?? 0;
 
@@ -247,7 +247,7 @@ function CampaignDetail() {
                             applicant={a}
                             full={full}
                             onApprove={() => setApplicantStatus(a.creatorId, "approved")}
-                            onDecline={() => setApplicantStatus(a.creatorId, "declined")}
+                            onDecline={() => setApplicantStatus(a.creatorId, "rejected")}
                           />
                         </li>
                       ))}
@@ -354,9 +354,9 @@ function TabCount({ count, hint }: { count: number; hint: string }) {
 }
 
 const applicantStyles: Record<ApplicantStatus, string> = {
-  pending: "bg-warning/15 text-warning",
+  applied: "bg-warning/15 text-warning",
   approved: "bg-success/15 text-success",
-  declined: "bg-muted text-muted-foreground",
+  rejected: "bg-muted text-muted-foreground",
 };
 
 function ApplicantBadge({ status }: { status: ApplicantStatus }) {
@@ -388,7 +388,7 @@ function ApplicantCard({
   const creator = getCreatorById(applicant.creatorId);
   if (!creator) return null;
 
-  const decided = applicant.status !== "pending";
+  const decided = applicant.status !== "applied";
   const niche = nicheKey(creator.niche);
   const initials = creator.name
     .split(" ")

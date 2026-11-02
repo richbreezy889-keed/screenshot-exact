@@ -414,7 +414,7 @@ export type Database = {
     };
     Functions: {};
     Enums: {
-      application_status: "pending" | "approved" | "declined" | "rejected" | "withdrawn";
+      application_status: "applied" | "approved" | "rejected" | "withdrawn";
       campaign_status: "draft" | "live" | "paused" | "completed" | "cancelled";
       checkpoint_status: "pending" | "verified" | "rejected";
       member_role: "owner" | "manager" | "viewer";

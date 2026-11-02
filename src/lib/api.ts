@@ -300,7 +300,7 @@ const awaitingVideos = (id: string) =>
   (campaignDetails[id]?.submissions ?? []).filter((s) => s.status === "awaiting").length;
 
 const pendingApplicants = (id: string) =>
-  (campaignDetails[id]?.applicants ?? []).filter((a) => a.status === "pending").length;
+  (campaignDetails[id]?.applicants ?? []).filter((a) => a.status === "applied").length;
 
 const countingViews = (id: string) => {
   const campaign = campaignById(id);
