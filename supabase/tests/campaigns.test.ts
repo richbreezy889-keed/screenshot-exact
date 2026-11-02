@@ -147,7 +147,7 @@ describe("applications", () => {
     await publishCampaign(db, campaign.id);
 
     const application = await applyToCampaign(db, campaign.id, IDS.creator1);
-    expect(application.status).toBe("pending");
+    expect(application.status).toBe("applied");
 
     await actAs(db, IDS.creator2, "authenticated");
     expect(await rows(db, "select id from public.applications where id = $1", [application.id])).toHaveLength(0);
@@ -372,10 +372,10 @@ describe("view checkpoints", () => {
     return { campaign, application, submission, checkpoint: checkpoint! };
   }
 
-  it("lets the campaign brand verify a checkpoint", async () => {
+  it("lets an admin verify a checkpoint", async () => {
     const { checkpoint } = await approvedSubmission("Checkpoint Verify");
 
-    await actAs(db, IDS.brandAManager, "authenticated");
+    await actAs(db, IDS.admin, "authenticated");
     const verified = await db.query(
       "update public.view_checkpoints set status = 'verified', views = 5000 where id = $1 returning status, views, verified_by",
       [checkpoint.id],
@@ -384,14 +384,40 @@ describe("view checkpoints", () => {
     expect(verified.rows[0]).toMatchObject({
       status: "verified",
       views: 5000,
-      verified_by: IDS.brandAManager,
+      verified_by: IDS.admin,
     });
   });
 
-  it("makes a verified checkpoint immutable", async () => {
+  it("lets no brand role change views_at_checkpoint, status or evidence", async () => {
+    const { checkpoint } = await approvedSubmission("Checkpoint No Brand Writes");
+
+    for (const actor of [IDS.brandAOwner, IDS.brandAManager, IDS.brandAViewer]) {
+      await actAs(db, actor, "authenticated");
+      await expect(
+        db.query("update public.view_checkpoints set views = 999 where id = $1", [checkpoint.id]),
+      ).rejects.toThrow(/row-level security/);
+      await expect(
+        db.query("update public.view_checkpoints set status = 'verified' where id = $1", [checkpoint.id]),
+      ).rejects.toThrow(/row-level security/);
+    }
+  });
+
+  it("lets an admin change an unverified checkpoint", async () => {
+    const { checkpoint } = await approvedSubmission("Checkpoint Admin Change");
+
+    await actAs(db, IDS.admin, "authenticated");
+    const updated = await db.query(
+      "update public.view_checkpoints set views = 4242 where id = $1 returning views",
+      [checkpoint.id],
+    );
+    expect(updated.rows).toHaveLength(1);
+    expect(updated.rows[0]).toMatchObject({ views: 4242 });
+  });
+
+  it("keeps a verified checkpoint immutable even for admin", async () => {
     const { checkpoint } = await approvedSubmission("Checkpoint Immutable");
 
-    await actAs(db, IDS.brandAManager, "authenticated");
+    await actAs(db, IDS.admin, "authenticated");
     await db.query(
       "update public.view_checkpoints set status = 'verified', views = 1234 where id = $1",
       [checkpoint.id],
@@ -441,7 +467,7 @@ describe("view checkpoints", () => {
     const afterMove = await checkpointFor(db, submission.id);
     expect(new Date(afterMove!.checkpoint_at).toISOString()).toBe("2026-10-10T10:00:00.000Z");
 
-    await actAs(db, IDS.brandAManager, "authenticated");
+    await actAs(db, IDS.admin, "authenticated");
     await db.query(
       "update public.view_checkpoints set status = 'verified', views = 777 where id = $1",
       [checkpoint.id],
