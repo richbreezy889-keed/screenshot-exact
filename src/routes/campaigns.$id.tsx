@@ -357,6 +357,7 @@ const applicantStyles: Record<ApplicantStatus, string> = {
   applied: "bg-warning/15 text-warning",
   approved: "bg-success/15 text-success",
   rejected: "bg-muted text-muted-foreground",
+  withdrawn: "bg-muted text-muted-foreground",
 };
 
 function ApplicantBadge({ status }: { status: ApplicantStatus }) {

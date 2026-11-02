@@ -244,6 +244,7 @@ export const dict = {
   decline: { en: "Decline", sw: "Kataa" },
   approved: { en: "Approved", sw: "Imeidhinishwa" },
   rejected: { en: "Rejected", sw: "Imekataliwa" },
+  withdrawn: { en: "Withdrawn", sw: "Imechaguliwa" },
   slotsFull: { en: "All creator slots are filled.", sw: "Nafasi zote za watayarishi zimejaa." },
   rating: { en: "Rating", sw: "Ukadiriaji" },
   pastCampaigns: { en: "past campaigns", sw: "kampeni zilizopita" },
