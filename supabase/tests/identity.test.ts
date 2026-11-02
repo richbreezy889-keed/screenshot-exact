@@ -133,16 +133,28 @@ describe("signup trigger", () => {
 });
 
 describe("anon access", () => {
-  it("cannot read any identity rows, except public platform settings", async () => {
+  it("has no privileges on any table or view", async () => {
     await actAs(db, null, "anon");
 
-    for (const table of ["profiles", "brands", "brand_members", "creators", "social_accounts"] as const) {
-      const count = await one<{ n: number }>(db, `select count(*)::int as n from public.${table}`);
-      expect(count?.n, `${table} should be empty for anon`).toBe(0);
-    }
+    const tables = [
+      "profiles",
+      "brands",
+      "brand_members",
+      "creators",
+      "social_accounts",
+      "campaigns",
+      "applications",
+      "submissions",
+      "view_checkpoints",
+      "platform_settings",
+      "campaigns_public",
+    ] as const;
 
-    const settings = await one<{ n: number }>(db, "select count(*)::int as n from public.platform_settings");
-    expect(settings?.n).toBe(1);
+    for (const table of tables) {
+      await expect(
+        db.query(`select count(*)::int as n from public.${table}`),
+      ).rejects.toThrow(/permission denied/);
+    }
   });
 });
 
@@ -460,7 +472,17 @@ describe("creators", () => {
     expect(visible.map((row) => row.id)).toEqual([IDS.creator1, IDS.creator2].sort());
 
     await actAs(db, null, "anon");
-    expect(await rows(db, "select id from public.creators")).toHaveLength(0);
+    await expect(db.query("select id from public.creators")).rejects.toThrow(/permission denied/);
+  });
+
+  it("does not let another creator read a creator's profile", async () => {
+    await actAs(db, IDS.creator2, "authenticated");
+    expect(
+      await rows(db, "select id from public.profiles where id = $1", [IDS.creator1]),
+    ).toHaveLength(0);
+    expect(
+      await rows(db, "select id from public.creators where id = $1", [IDS.creator1]),
+    ).toHaveLength(0);
   });
 });
 
@@ -522,6 +544,56 @@ describe("social accounts", () => {
     expect(await rows(db, "select id from public.social_accounts")).toHaveLength(1);
 
     await actAs(db, null, "anon");
-    expect(await rows(db, "select id from public.social_accounts")).toHaveLength(0);
+    await expect(
+      db.query("select id from public.social_accounts"),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it("does not let another creator read a creator's social accounts", async () => {
+    await actAs(db, IDS.creator2, "authenticated");
+    expect(
+      await rows(db, "select id from public.social_accounts where creator_id = $1", [IDS.creator1]),
+    ).toHaveLength(0);
+  });
+});
+
+describe("table and view privileges (A4)", () => {
+  it("anon has no privileges on any table and none on campaigns_public", async () => {
+    await actAs(db, null, "anon");
+
+    const anonGrants = await rows<{ table_name: string; privilege_type: string }>(
+      db,
+      `select table_name, privilege_type
+       from information_schema.role_table_grants
+       where grantee = 'anon'
+       order by table_name, privilege_type`,
+    );
+
+    expect(anonGrants).toEqual([]);
+
+    const authenticatedGrants = await rows<{ table_name: string; privilege_type: string }>(
+      db,
+      `select table_name, privilege_type
+       from information_schema.role_table_grants
+       where grantee = 'authenticated'
+       order by table_name, privilege_type`,
+    );
+
+    // Print the authenticated privilege list for the report.
+    // eslint-disable-next-line no-console
+    console.log("Authenticated table/view privileges:");
+    for (const row of authenticatedGrants) {
+      // eslint-disable-next-line no-console
+      console.log(`  ${row.table_name}: ${row.privilege_type}`);
+    }
+
+    // anon must have nothing on campaigns_public specifically
+    const campaignsPublicGrants = await rows<{ table_name: string; privilege_type: string }>(
+      db,
+      `select table_name, privilege_type
+       from information_schema.role_table_grants
+       where grantee = 'anon' and table_name = 'campaigns_public'`,
+    );
+    expect(campaignsPublicGrants).toEqual([]);
   });
 });
