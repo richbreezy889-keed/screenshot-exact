@@ -1,0 +1,2 @@
+-- Intentionally empty for now.
+-- Reference data lives in migrations (platform_settings) and later seeds will be added here.
