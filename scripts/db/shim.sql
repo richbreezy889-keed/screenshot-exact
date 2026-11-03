@@ -57,3 +57,7 @@ begin
     create role supabase_admin nologin bypassrls;
   end if;
 end $$;
+
+-- Hosted Supabase lets the API roles call auth.uid() / auth.role() / auth.jwt().
+grant usage on schema auth to anon, authenticated, service_role;
+grant execute on function auth.uid(), auth.role(), auth.jwt() to anon, authenticated, service_role;

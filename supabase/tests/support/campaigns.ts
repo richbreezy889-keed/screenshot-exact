@@ -20,7 +20,7 @@ export type CampaignRow = {
   rate_per_1k: number;
   budget: number;
   creators_needed: number;
-  max_videos_per_creator: number;
+  videos_per_creator: number;
   creator_cap: number;
   deadline: string;
 };
@@ -67,7 +67,7 @@ export async function createCampaign(
     db,
     `insert into public.campaigns
        (brand_id, title, status, platforms, rate_per_1k, budget,
-        creators_needed, max_videos_per_creator, deadline)
+        creators_needed, videos_per_creator, deadline)
      values ($1, $2, $3::public.campaign_status, $4::public.social_platform[],
         $5, $6, $7, $8, $9)
      returning *`,
@@ -79,7 +79,7 @@ export async function createCampaign(
       input.rate ?? 4000,
       input.budget ?? 2_000_000,
       input.creators ?? 5,
-      input.maxVideos ?? 2,
+      input.maxVideos ?? 1,
       input.deadline ?? "2026-12-31",
     ],
   );
@@ -87,12 +87,16 @@ export async function createCampaign(
   return campaign!;
 }
 
+/**
+ * Publishing is a platform action (a server function in step 4+), so the test
+ * helper acts as the service role. Brands cannot change status directly.
+ */
 export async function publishCampaign(
   db: Db,
   campaignId: string,
-  actor = IDS.brandAOwner,
+  _actor = IDS.brandAOwner,
 ): Promise<CampaignRow> {
-  await actAs(db, actor, "authenticated");
+  await actAs(db, null, "service_role");
   const [campaign] = await rows<CampaignRow>(
     db,
     "update public.campaigns set status = 'live', published_at = now() where id = $1 returning *",
@@ -155,7 +159,13 @@ export async function submitVideo(
   },
 ): Promise<SubmissionRow> {
   const creatorId = input.creatorId;
-  await actAs(db, creatorId, "authenticated");
+  // An explicit historical posted_at is inserted by the platform (service
+  // role); the creator path always uses the real clock, as the app will.
+  if (input.postedAt) {
+    await actAs(db, null, "service_role");
+  } else {
+    await actAs(db, creatorId, "authenticated");
+  }
 
   const [submission] = await rows<SubmissionRow>(
     db,
@@ -168,7 +178,7 @@ export async function submitVideo(
       input.campaignId,
       creatorId,
       input.url ?? `https://example.com/${crypto.randomUUID()}`,
-      input.postedAt ?? "2026-10-01T10:00:00Z",
+      input.postedAt ?? new Date().toISOString(),
     ],
   );
 

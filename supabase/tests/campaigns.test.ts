@@ -118,7 +118,7 @@ describe("campaign terms", () => {
       "rate_per_1k = 5000",
       "budget = 3000000",
       "creators_needed = 9",
-      "max_videos_per_creator = 1",
+      "videos_per_creator = 2",
       "platforms = '{instagram}'::public.social_platform[]",
       "deadline = '2027-01-31'",
     ];
@@ -135,6 +135,11 @@ describe("campaign terms", () => {
     );
     expect(title.rows).toHaveLength(1);
 
+    await expect(
+      db.query("update public.campaigns set status = 'draft' where id = $1", [campaign.id]),
+    ).rejects.toThrow(/cannot return to draft|status can only be changed by the platform/);
+
+    await actAs(db, null, "service_role");
     await expect(
       db.query("update public.campaigns set status = 'draft' where id = $1", [campaign.id]),
     ).rejects.toThrow(/cannot return to draft/);
@@ -167,7 +172,7 @@ describe("applications", () => {
     await actAs(db, IDS.creator1, "authenticated");
     await expect(
       db.query("update public.applications set status = 'approved' where id = $1", [application.id]),
-    ).rejects.toThrow(/row-level security/);
+    ).rejects.toThrow(/row-level security|can only withdraw/);
   });
 
   it("lets the brand approve an application and records the reviewer", async () => {
@@ -343,7 +348,7 @@ describe("submissions", () => {
     await actAs(db, IDS.creator1, "authenticated");
     await expect(
       db.query("update public.submissions set status = 'approved' where id = $1", [submission.id]),
-    ).rejects.toThrow(/row-level security/);
+    ).rejects.toThrow(/row-level security|can only resubmit/);
 
     await actAs(db, IDS.brandAOwner, "authenticated");
     const approved = await db.query(
@@ -377,7 +382,7 @@ describe("view checkpoints", () => {
 
     await actAs(db, IDS.admin, "authenticated");
     const verified = await db.query(
-      "update public.view_checkpoints set status = 'verified', views = 5000 where id = $1 returning status, views, verified_by",
+      "update public.view_checkpoints set status = 'verified', views = 5000, evidence_url = 'https://example.com/proof.png' where id = $1 returning status, views, verified_by",
       [checkpoint.id],
     );
     expect(verified.rows).toHaveLength(1);
@@ -423,7 +428,7 @@ describe("view checkpoints", () => {
 
     await actAs(db, IDS.admin, "authenticated");
     await db.query(
-      "update public.view_checkpoints set status = 'verified', views = 1234 where id = $1",
+      "update public.view_checkpoints set status = 'verified', views = 1234, evidence_url = 'https://example.com/proof.png' where id = $1",
       [checkpoint.id],
     );
 
@@ -461,7 +466,7 @@ describe("view checkpoints", () => {
   it("re-derives the checkpoint until it is verified", async () => {
     const { submission, checkpoint } = await approvedSubmission("Checkpoint Rederive");
 
-    await actAs(db, IDS.creator1, "authenticated");
+    await actAs(db, IDS.admin, "authenticated");
     const moved = await db.query(
       "update public.submissions set posted_at = '2026-10-03T10:00:00Z' where id = $1 returning posted_at",
       [submission.id],
@@ -473,11 +478,11 @@ describe("view checkpoints", () => {
 
     await actAs(db, IDS.admin, "authenticated");
     await db.query(
-      "update public.view_checkpoints set status = 'verified', views = 777 where id = $1",
+      "update public.view_checkpoints set status = 'verified', views = 777, evidence_url = 'https://example.com/proof.png' where id = $1",
       [checkpoint.id],
     );
 
-    await actAs(db, IDS.creator1, "authenticated");
+    await actAs(db, IDS.admin, "authenticated");
     await expect(
       db.query("update public.submissions set posted_at = '2026-10-04T10:00:00Z' where id = $1", [
         submission.id,

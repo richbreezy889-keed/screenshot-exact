@@ -41,3 +41,10 @@ The shim does **not** reproduce the following Supabase behaviours:
 These differences mean the shim is suitable for schema and RLS logic
 verification, but not for testing auth token handling, role derivation from
 JWTs, or the exact grant/ownership semantics of a hosted project.
+## Test harness limits (PGlite)
+
+- The shim in `scripts/db/shim.sql` imitates Supabase's `auth` schema and roles. It grants `usage` on schema `auth` and `execute` on `auth.uid()`, `auth.role()` and `auth.jwt()` to `anon`, `authenticated` and `service_role`, as real Supabase does. Confirm this against the hosted project.
+- PGlite has one connection, so true concurrency (two creators submitting the last video slot at once) cannot be proved locally. `enforce_submission_rules` locks the application row (`for update`); the hosted run must prove it.
+- Guard triggers (`guard_*`) are SECURITY INVOKER and only restrict `anon` and `authenticated`. SECURITY DEFINER server functions run as the owner and bypass them on purpose.
+- Guard triggers run before the row-level-security check, so some attacks fail with a guard message instead of "row-level security". Both are rejections.
+- Default privileges are revoked for new tables and functions: every new table needs explicit grants and RLS policies.

@@ -81,9 +81,9 @@ describe("schema and RLS basics", () => {
   });
 
   it("keeps platform_settings to exactly one seeded row", async () => {
-    const settings = await rows(db, "select id, platform_name, platform_fee_bps from public.platform_settings");
+    const settings = await rows(db, "select id, platform_name, fee_bps from public.platform_settings");
     expect(settings).toHaveLength(1);
-    expect(settings[0]).toMatchObject({ id: true, platform_name: "Biboh", platform_fee_bps: 2000 });
+    expect(settings[0]).toMatchObject({ id: true, platform_name: "Biboh", fee_bps: 1500 });
   });
 });
 
@@ -313,11 +313,21 @@ describe("brand member permissions", () => {
     );
     expect(managerEdit.rows).toHaveLength(1);
 
+    await expect(
+      db.query(
+        "insert into public.brand_members (brand_id, user_id, role) values ($1, $2, 'viewer')",
+        [brandA, IDS.outsider],
+      ),
+    ).rejects.toThrow(/row-level security/);
+
+    await actAs(db, IDS.brandAOwner, "authenticated");
     const invited = await db.query(
       "insert into public.brand_members (brand_id, user_id, role) values ($1, $2, 'viewer') returning user_id",
       [brandA, IDS.outsider],
     );
     expect(invited.rows).toHaveLength(1);
+
+    await actAs(db, IDS.brandAManager, "authenticated");
 
     const promote = await db.query(
       "update public.brand_members set role = 'manager' where brand_id = $1 and user_id = $2 returning role",
@@ -426,6 +436,11 @@ describe("create_brand", () => {
     );
     expect(owner).toMatchObject({ role: "owner" });
 
+    // Only an admin may delete a brand (its campaign history must survive).
+    const ownerDelete = await db.query("delete from public.brands where id = $1 returning id", [created!.id]);
+    expect(ownerDelete.rows).toHaveLength(0);
+
+    await actAs(db, IDS.admin, "authenticated");
     const deleted = await db.query("delete from public.brands where id = $1 returning id", [created!.id]);
     expect(deleted.rows).toHaveLength(1);
 
