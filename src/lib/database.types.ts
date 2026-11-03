@@ -118,7 +118,7 @@ export type Database = {
         "rate_per_1k": number;
         "budget": number;
         "creators_needed": number;
-        "max_videos_per_creator": number;
+        "videos_per_creator": number;
         "creator_cap": number | null;
         "deadline": string;
         "published_at": string | null;
@@ -137,7 +137,7 @@ export type Database = {
         "rate_per_1k": number;
         "budget": number;
         "creators_needed": number;
-        "max_videos_per_creator"?: number;
+        "videos_per_creator"?: number;
         "deadline": string;
         "published_at"?: string | null;
         "created_at"?: string;
@@ -155,7 +155,7 @@ export type Database = {
         "rate_per_1k"?: number;
         "budget"?: number;
         "creators_needed"?: number;
-        "max_videos_per_creator"?: number;
+        "videos_per_creator"?: number;
         "deadline"?: string;
         "published_at"?: string | null;
         "created_at"?: string;
@@ -209,7 +209,7 @@ export type Database = {
         "platform_name": string;
         "support_email": string | null;
         "default_currency": string;
-        "platform_fee_bps": number;
+        "fee_bps": number;
         "min_payout_tzs": number;
         "updated_at": string;
         "min_rate_per_1k": number;
@@ -219,7 +219,7 @@ export type Database = {
         "platform_name"?: string;
         "support_email"?: string | null;
         "default_currency"?: string;
-        "platform_fee_bps"?: number;
+        "fee_bps"?: number;
         "min_payout_tzs"?: number;
         "updated_at"?: string;
         "min_rate_per_1k"?: number;
@@ -229,7 +229,7 @@ export type Database = {
         "platform_name"?: string;
         "support_email"?: string | null;
         "default_currency"?: string;
-        "platform_fee_bps"?: number;
+        "fee_bps"?: number;
         "min_payout_tzs"?: number;
         "updated_at"?: string;
         "min_rate_per_1k"?: number;
@@ -404,7 +404,7 @@ export type Database = {
         "niche": string | null;
         "rate_per_1k": number | null;
         "creators_needed": number | null;
-        "max_videos_per_creator": number | null;
+        "videos_per_creator": number | null;
         "deadline": string | null;
         "created_at": string | null;
         "updated_at": string | null;

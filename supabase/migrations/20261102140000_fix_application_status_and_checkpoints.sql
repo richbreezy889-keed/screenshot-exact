@@ -142,70 +142,12 @@ create policy applications_update_creator
   with check (
     creator_id = auth.uid()
     and status in ('applied', 'withdrawn')
-    and (
-      -- Allow 'applied' -> 'withdrawn'
-      (old.status is distinct from 'approved' and new.status = 'withdrawn')
-      or (new.status = 'withdrawn' and old.status = 'applied')
-    )
   );
-
--- Restrict creator delete: only admin can delete, or delete when status is 'pending' and no submissions exist
-drop policy if exists applications_delete on public.applications;
 
 create policy applications_delete
   on public.applications for delete
   to authenticated
   using (
     public.is_admin()
-    or (creator_id = auth.uid() and status = 'pending')
-    and not exists (
-      select 1 from public.submissions s
-      where s.application_id = public.applications.id
-    )
+    or (creator_id = auth.uid() and status = 'applied')
   );
-
--- Add trigger to enforce application status transition rules
-drop trigger if exists applications_status_management on public.applications;
-
-create or replace function public.applications_status_trigger()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  -- Prevent status change from 'rejected' to anything else
-  if old.status = 'rejected' and new.status is distinct from old.status then
-    raise exception 'a rejected application cannot be modified'
-      using errcode = 'insufficient_privilege';
-  end if;
-
-  -- Prevent status change from 'approved' to anything except 'withdrawn' before submissions exist
-  if old.status = 'approved' and new.status is distinct from old.status then
-    if new.status <> 'withdrawn' then
-      raise exception 'an approved application cannot be modified except to withrawn'
-        using errcode = 'insufficient_privilege';
-    end if;
-    -- Check if any submissions exist for this application
-    if exists (
-      select 1 from public.submissions s
-      where s.application_id = new.id
-    ) then
-      raise exception 'cannot withdraw an approved application that has submissions'
-        using errcode = 'insufficient_privilege';
-    end if;
-  end if;
-
-  -- Prevent going back to 'applied' from any other status
-  if new.status = 'applied' and old.status is distinct from 'applied' then
-    raise exception 'cannot change an application status to applied'
-      using errcode = 'insufficient_privilege';
-  end if;
-
-  return new;
-end;
-$$;
-
-create trigger applications_status_management
-  before update on public.applications
-  for each row execute function public.applications_status_trigger();
