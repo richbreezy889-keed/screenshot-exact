@@ -55,7 +55,7 @@ describe("helper oracles (data isolation)", () => {
           rate_per_1k: 4000,
           budget: 1000000,
           creators_needed: 1,
-          max_videos_per_creator: 1,
+          videos_per_creator: 1,
           deadline: "2026-12-31",
         })
         .select()

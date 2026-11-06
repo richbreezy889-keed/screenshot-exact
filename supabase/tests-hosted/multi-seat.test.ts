@@ -54,7 +54,7 @@ describe("multi-seat approval (concurrency)", () => {
           rate_per_1k: 4000,
           budget: 3000000,
           creators_needed: 3,
-          max_videos_per_creator: 2,
+          videos_per_creator: 2,
           deadline: "2026-12-31",
         })
         .select()

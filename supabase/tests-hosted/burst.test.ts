@@ -63,7 +63,7 @@ describe("burst submissions (concurrency)", () => {
           rate_per_1k: 4000,
           budget: 1000000,
           creators_needed: 5,
-          max_videos_per_creator: 3,
+          videos_per_creator: 3,
           deadline: "2026-12-31",
         })
         .select()
