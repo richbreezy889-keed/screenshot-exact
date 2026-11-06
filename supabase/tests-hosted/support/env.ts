@@ -2,6 +2,7 @@
 // Environment loader for hosted-mode tests.
 // Loads .env.test.local and validates that we are NOT targeting production.
 import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 
 function loadEnvFile(path: string): Record<string, string> {
   try {
@@ -26,7 +27,7 @@ function loadEnvFile(path: string): Record<string, string> {
   }
 }
 
-const env = loadEnvFile(new URL(".env.test.local", import.meta.url).pathname)
+const env = loadEnvFile(resolve(process.cwd(), ".env.test.local"))
 
 export const SUPABASE_URL = env["SUPABASE_URL"]
 export const SUPABASE_ANON_KEY = env["SUPABASE_ANON_KEY"]
