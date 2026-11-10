@@ -1,128 +1,104 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest"
-import { createAnonClient, createServiceClient, createUserViaAdmin, signInUser, getUserId, type TestUser } from "./support/clients"
+import { createServiceClient } from "./support/clients"
 import { cleanup } from "./support/cleanup"
-import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } from "./support/env"
+import {
+  ensureUser,
+  createBrand,
+  ensureCreatorRow,
+  createLiveCampaign,
+  type TestUser,
+} from "./support/fixtures"
 
 const ROUNDS = 30
-const BRAND_1_EMAIL = "hosted-brand-owner-1@biboh.test"
-const BRAND_1_PASSWORD = "HostedTest123!"
-const CREATOR_1_EMAIL = "hosted-creator-1@biboh.test"
-const CREATOR_1_PASSWORD = "HostedTest123!"
-const CREATOR_2_EMAIL = "hosted-creator-2@biboh.test"
-const CREATOR_2_PASSWORD = "HostedTest123!"
-const CREATOR_3_EMAIL = "hosted-creator-3@biboh.test"
-const CREATOR_3_PASSWORD = "HostedTest123!"
-const CREATOR_4_EMAIL = "hosted-creator-4@biboh.test"
-const CREATOR_4_PASSWORD = "HostedTest123!"
-const CREATOR_5_EMAIL = "hosted-creator-5@biboh.test"
-const CREATOR_5_PASSWORD = "HostedTest123!"
+const CAP = 3
+const ATTEMPTS = 5
 
 describe("burst submissions (concurrency)", () => {
   let serviceClient: ReturnType<typeof createServiceClient>
-  let brandClient: ReturnType<typeof createAnonClient>
-  let creatorClients: ReturnType<typeof createAnonClient>[]
+  let brand: TestUser
+  let c1: TestUser
   let brandId: string
 
   beforeAll(async () => {
     serviceClient = createServiceClient()
 
-    await createUserViaAdmin(serviceClient, { email: BRAND_1_EMAIL, password: BRAND_1_PASSWORD, role: "brand" })
-    for (let i = 1; i <= 5; i++) {
-      await createUserViaAdmin(serviceClient, {
-        email: `hosted-creator-${i}@biboh.test`,
-        password: "HostedTest123!",
-        role: "creator",
-      })
-    }
+    brand = await ensureUser(serviceClient, "hosted-brand-owner-1@biboh.test", "brand")
+    c1 = await ensureUser(serviceClient, "hosted-creator-1@biboh.test", "creator")
 
-    brandClient = await signInUser(createAnonClient(), BRAND_1_EMAIL, BRAND_1_PASSWORD)
-    creatorClients = []
-    for (let i = 1; i <= 5; i++) {
-      creatorClients.push(await signInUser(createAnonClient(), `hosted-creator-${i}@biboh.test`, "HostedTest123!"))
-    }
+    await ensureCreatorRow(c1.client)
 
-    const { data: profiles } = await serviceClient.from("profiles").select("id, role").eq("email", BRAND_1_EMAIL).single()
-    brandId = profiles!.id
+    brandId = await createBrand(brand.client, "Test Brand 1")
   })
 
   afterAll(async () => {
     await cleanup(serviceClient)
   })
 
-  it("exactly 3 submissions when 5 insert at once (cap=3)", async () => {
-    for (let round = 0; round < ROUNDS; round++) {
-      const uniqueTitle = `hosted-test-burst-${round}-${Date.now()}`
+  for (let round = 0; round < ROUNDS; round++) {
+    it(`round ${round}: exactly ${CAP} of ${ATTEMPTS} simultaneous videos win`, async () => {
+      const campaign = await createLiveCampaign(brand.client, serviceClient, brandId, {
+        title: `hosted-test-burst-${round}-${Date.now()}`,
+        creators_needed: 1,
+        videos_per_creator: CAP,
+      })
 
-      const { data: campaign, error: camErr } = await brandClient
-        .from("campaigns")
-        .insert({
-          title: uniqueTitle,
-          brand_id: brandId,
-          status: "draft",
-          platforms: ["tiktok"],
-          rate_per_1k: 4000,
-          budget: 1000000,
-          creators_needed: 5,
-          videos_per_creator: 3,
-          deadline: "2026-12-31",
-        })
-        .select()
-        .single()
-      if (camErr) throw camErr
-
-      const { error: pubErr } = await serviceClient
-        .from("campaigns")
-        .update({ status: "live", published_at: new Date().toISOString() })
-        .eq("id", campaign.id)
-      if (pubErr) throw pubErr
-
-      // All 5 creators apply and get approved
-      const appIds: string[] = []
-      for (let i = 0; i < 5; i++) {
-        const cid = await getUserId(creatorClients[i])
-        const { data: app, error: appErr } = await creatorClients[i]
+      try {
+        const { data: app, error: appErr } = await c1.client
           .from("applications")
-          .insert({ campaign_id: campaign.id, creator_id: cid! })
+          .insert({ campaign_id: campaign.id, creator_id: c1.id })
           .select()
           .single()
         if (appErr) throw appErr
-        appIds.push(app.id)
 
-        const { error: approveErr } = await brandClient
+        const { error: approveErr } = await brand.client
           .from("applications")
           .update({ status: "approved" })
           .eq("id", app.id)
         if (approveErr) throw approveErr
+
+        // Five different videos at once for a cap of three.
+        const results = await Promise.allSettled(
+          Array.from({ length: ATTEMPTS }, (_, i) =>
+            c1.client.from("submissions").insert({
+              application_id: app.id,
+              campaign_id: campaign.id,
+              creator_id: c1.id,
+              platform: "tiktok",
+              video_url: `https://example.com/burst-${round}-${i}-${Date.now()}`,
+              posted_at: new Date().toISOString(),
+            }),
+          ),
+        )
+
+        let winners = 0
+        let losers = 0
+
+        for (const r of results) {
+          if (r.status === "rejected") {
+            throw new Error(`Unexpected rejected promise: ${(r as any).reason}`)
+          }
+          const { error } = r.value as { error: { code?: string; message?: string } | null }
+          if (error) {
+            losers++
+            expect(error.code, `unexpected error: ${error.message ?? ""}`).toBe("23514")
+            expect((error.message ?? "").toLowerCase()).toContain("submission cap")
+          } else {
+            winners++
+          }
+        }
+
+        expect(winners).toBe(CAP)
+        expect(losers).toBe(ATTEMPTS - CAP)
+
+        const { data: rows, error: readErr } = await serviceClient
+          .from("submissions")
+          .select("id")
+          .eq("application_id", app.id)
+        if (readErr) throw readErr
+        expect(rows).toHaveLength(CAP)
+      } finally {
+        await serviceClient.from("campaigns").delete().eq("id", campaign.id)
       }
-
-      // 5 submissions at once
-      const results = await Promise.allSettled(
-        creatorClients.map(async (c, i) => {
-          const cid = await getUserId(c)
-          return c.from("submissions").insert({
-            application_id: appIds[i],
-            campaign_id: campaign.id,
-            creator_id: cid!,
-            platform: "tiktok",
-            video_url: `https://example.com/video-${round}-${i}`,
-            posted_at: new Date().toISOString(),
-          })
-        })
-      )
-
-      const successCount = results.filter((r) => r.status === "fulfilled").length
-      const errorCount = results.filter((r) => r.status === "rejected").length
-
-      expect(successCount).toBe(3)
-      expect(errorCount).toBe(2)
-
-      const { data: subs } = await serviceClient
-        .from("submissions")
-        .select("id")
-        .eq("campaign_id", campaign.id)
-      expect(subs!.length).toBe(3)
-
-      await serviceClient.from("campaigns").delete().eq("id", campaign.id)
-    }
-  })
+    })
+  }
 })
