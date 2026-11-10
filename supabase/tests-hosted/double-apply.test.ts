@@ -1,91 +1,84 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest"
-import { createAnonClient, createServiceClient, createUserViaAdmin, signInUser, getUserId, type TestUser } from "./support/clients"
+import { createServiceClient } from "./support/clients"
 import { cleanup } from "./support/cleanup"
-import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } from "./support/env"
+import {
+  ensureUser,
+  createBrand,
+  ensureCreatorRow,
+  createLiveCampaign,
+  type TestUser,
+} from "./support/fixtures"
 
 const ROUNDS = 30
-const BRAND_1_EMAIL = "hosted-brand-owner-1@biboh.test"
-const BRAND_1_PASSWORD = "HostedTest123!"
-const CREATOR_1_EMAIL = "hosted-creator-1@biboh.test"
-const CREATOR_1_PASSWORD = "HostedTest123!"
 
 describe("double apply (concurrency)", () => {
   let serviceClient: ReturnType<typeof createServiceClient>
-  let brandClient: ReturnType<typeof createAnonClient>
-  let c1Client: ReturnType<typeof createAnonClient>
+  let brand: TestUser
+  let c1: TestUser
   let brandId: string
 
   beforeAll(async () => {
     serviceClient = createServiceClient()
-
-    await createUserViaAdmin(serviceClient, { email: BRAND_1_EMAIL, password: BRAND_1_PASSWORD, role: "brand" })
-    await createUserViaAdmin(serviceClient, { email: CREATOR_1_EMAIL, password: CREATOR_1_PASSWORD, role: "creator" })
-
-    brandClient = await signInUser(createAnonClient(), BRAND_1_EMAIL, BRAND_1_PASSWORD)
-    c1Client = await signInUser(createAnonClient(), CREATOR_1_EMAIL, CREATOR_1_PASSWORD)
-
-    const { data: profiles } = await serviceClient.from("profiles").select("id, role").eq("email", BRAND_1_EMAIL).single()
-    brandId = profiles!.id
+    brand = await ensureUser(serviceClient, "hosted-brand-owner-1@biboh.test", "brand")
+    c1 = await ensureUser(serviceClient, "hosted-creator-1@biboh.test", "creator")
+    await ensureCreatorRow(c1.client)
+    brandId = await createBrand(brand.client, "Test Brand 1")
   })
 
   afterAll(async () => {
     await cleanup(serviceClient)
   })
 
-  it("exactly 1 application row when same creator applies twice at once", async () => {
-    for (let round = 0; round < ROUNDS; round++) {
-      const uniqueTitle = `hosted-test-double-apply-${round}-${Date.now()}`
+  for (let round = 0; round < ROUNDS; round++) {
+    it(`round ${round}: the same creator applying twice makes exactly one application`, async () => {
+      const campaign = await createLiveCampaign(brand.client, serviceClient, brandId, {
+        title: `hosted-test-double-apply-${round}-${Date.now()}`,
+        creators_needed: 2,
+        videos_per_creator: 1,
+      })
 
-      const { data: campaign, error: camErr } = await brandClient
-        .from("campaigns")
-        .insert({
-          title: uniqueTitle,
-          brand_id: brandId,
-          status: "draft",
-          platforms: ["tiktok"],
-          rate_per_1k: 4000,
-          budget: 1000000,
-          creators_needed: 2,
-          videos_per_creator: 1,
-          deadline: "2026-12-31",
-        })
-        .select()
-        .single()
-      if (camErr) throw camErr
+      try {
+        const apply = () =>
+          c1.client
+            .from("applications")
+            .insert({ campaign_id: campaign.id, creator_id: c1.id })
+            .select("id")
 
-      const { error: pubErr } = await serviceClient
-        .from("campaigns")
-        .update({ status: "live", published_at: new Date().toISOString() })
-        .eq("id", campaign.id)
-      if (pubErr) throw pubErr
+        const results = await Promise.allSettled([apply(), apply()])
 
-      // Same creator applies twice at once
-      const c1Id = await getUserId(c1Client)
-      const results = await Promise.allSettled([
-        c1Client.from("applications").insert({
-          campaign_id: campaign.id,
-          creator_id: c1Id!,
-        }),
-        c1Client.from("applications").insert({
-          campaign_id: campaign.id,
-          creator_id: c1Id!,
-        }),
-      ])
+        let winners = 0
+        let losers = 0
 
-      const successCount = results.filter((r) => r.status === "fulfilled").length
-      const errorCount = results.filter((r) => r.status === "rejected").length
+        for (const r of results) {
+          if (r.status === "rejected") {
+            throw new Error(`Unexpected rejected promise: ${(r as any).reason}`)
+          }
+          const { data, error } = r.value as {
+            data: { id: string }[] | null
+            error: { code?: string; message?: string } | null
+          }
+          if (error) {
+            losers++
+            expect(error.code, `unexpected error: ${error.message ?? ""}`).toBe("23505")
+          } else {
+            expect(data).toHaveLength(1)
+            winners++
+          }
+        }
 
-      expect(successCount).toBe(1)
-      expect(errorCount).toBe(1)
+        expect(winners).toBe(1)
+        expect(losers).toBe(1)
 
-      const { data: apps } = await serviceClient
-        .from("applications")
-        .select("id")
-        .eq("campaign_id", campaign.id)
-        .eq("creator_id", c1Id!)
-      expect(apps!.length).toBe(1)
-
-      await serviceClient.from("campaigns").delete().eq("id", campaign.id)
-    }
-  })
+        const { data: rows, error: readErr } = await serviceClient
+          .from("applications")
+          .select("id")
+          .eq("campaign_id", campaign.id)
+          .eq("creator_id", c1.id)
+        if (readErr) throw readErr
+        expect(rows).toHaveLength(1)
+      } finally {
+        await serviceClient.from("campaigns").delete().eq("id", campaign.id)
+      }
+    })
+  }
 })
