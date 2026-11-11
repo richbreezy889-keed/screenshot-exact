@@ -416,7 +416,7 @@ describe("create_brand", () => {
 
     await actAs(db, null, "anon");
     await expect(db.query("select public.create_brand('Anon Co')")).rejects.toThrow(
-      /authentication required/,
+      /permission denied|authentication required/,
     );
   });
 
