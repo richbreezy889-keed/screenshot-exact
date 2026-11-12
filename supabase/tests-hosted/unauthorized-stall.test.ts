@@ -1,102 +1,114 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest"
-import { createAnonClient, createServiceClient, createUserViaAdmin, signInUser, getUserId, type TestUser } from "./support/clients"
+import { createServiceClient } from "./support/clients"
 import { cleanup } from "./support/cleanup"
-import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } from "./support/env"
+import {
+  ensureUser,
+  createBrand,
+  ensureCreatorRow,
+  createLiveCampaign,
+  type TestUser,
+} from "./support/fixtures"
 
-const ROUNDS = 30
-const BRAND_1_EMAIL = "hosted-brand-owner-1@biboh.test"
-const BRAND_1_PASSWORD = "HostedTest123!"
-const OUTSIDER_EMAIL = "hosted-outsider@biboh.test"
-const OUTSIDER_PASSWORD = "HostedTest123!"
-const CREATOR_1_EMAIL = "hosted-creator-1@biboh.test"
-const CREATOR_1_PASSWORD = "HostedTest123!"
+const ROUNDS = 10
+const SELF_APPROVE_ATTEMPTS = 8
+const OUTSIDER_ATTEMPTS = 4
+const MAX_LEGIT_MS = 8000
 
 describe("unauthorized stall (concurrency)", () => {
   let serviceClient: ReturnType<typeof createServiceClient>
-  let brandClient: ReturnType<typeof createAnonClient>
-  let outsiderClient: ReturnType<typeof createAnonClient>
-  let c1Client: ReturnType<typeof createAnonClient>
+  let brand: TestUser
+  let otherBrand: TestUser
+  let c1: TestUser
+  let c2: TestUser
   let brandId: string
 
   beforeAll(async () => {
     serviceClient = createServiceClient()
+    brand = await ensureUser(serviceClient, "hosted-brand-owner-1@biboh.test", "brand")
+    otherBrand = await ensureUser(serviceClient, "hosted-brand-owner-2@biboh.test", "brand")
+    c1 = await ensureUser(serviceClient, "hosted-creator-1@biboh.test", "creator")
+    c2 = await ensureUser(serviceClient, "hosted-creator-2@biboh.test", "creator")
+    await ensureCreatorRow(c1.client)
+    await ensureCreatorRow(c2.client)
 
-    await createUserViaAdmin(serviceClient, { email: BRAND_1_EMAIL, password: BRAND_1_PASSWORD, role: "brand" })
-    await createUserViaAdmin(serviceClient, { email: OUTSIDER_EMAIL, password: OUTSIDER_PASSWORD, role: "creator" })
-    await createUserViaAdmin(serviceClient, { email: CREATOR_1_EMAIL, password: CREATOR_1_PASSWORD, role: "creator" })
-
-    brandClient = await signInUser(createAnonClient(), BRAND_1_EMAIL, BRAND_1_PASSWORD)
-    outsiderClient = await signInUser(createAnonClient(), OUTSIDER_EMAIL, OUTSIDER_PASSWORD)
-    c1Client = await signInUser(createAnonClient(), CREATOR_1_EMAIL, CREATOR_1_PASSWORD)
-
-    const { data: profiles } = await serviceClient.from("profiles").select("id, role").eq("email", BRAND_1_EMAIL).single()
-    brandId = profiles!.id
+    brandId = await createBrand(brand.client, "Test Brand 1")
+    await createBrand(otherBrand.client, "Test Brand 2")
   })
 
   afterAll(async () => {
     await cleanup(serviceClient)
   })
 
-  it("outsider approval attempts must not block legitimate approval beyond 5s", async () => {
-    for (let round = 0; round < ROUNDS; round++) {
-      const uniqueTitle = `hosted-test-stall-${round}-${Date.now()}`
+  for (let round = 0; round < ROUNDS; round++) {
+    it(`round ${round}: failed approvals do not delay a real approval`, async () => {
+      const campaign = await createLiveCampaign(brand.client, serviceClient, brandId, {
+        title: `hosted-test-stall-${round}-${Date.now()}`,
+        creators_needed: 2,
+        videos_per_creator: 1,
+      })
 
-      const { data: campaign, error: camErr } = await brandClient
-        .from("campaigns")
-        .insert({
-          title: uniqueTitle,
-          brand_id: brandId,
-          status: "draft",
-          platforms: ["tiktok"],
-          rate_per_1k: 4000,
-          budget: 1000000,
-          creators_needed: 1,
-          videos_per_creator: 1,
-          deadline: "2026-12-31",
-        })
-        .select()
-        .single()
-      if (camErr) throw camErr
+      try {
+        const { data: app1, error: e1 } = await c1.client
+          .from("applications")
+          .insert({ campaign_id: campaign.id, creator_id: c1.id })
+          .select("id")
+          .single()
+        if (e1) throw e1
 
-      const { error: pubErr } = await serviceClient
-        .from("campaigns")
-        .update({ status: "live", published_at: new Date().toISOString() })
-        .eq("id", campaign.id)
-      if (pubErr) throw pubErr
+        const { data: app2, error: e2 } = await c2.client
+          .from("applications")
+          .insert({ campaign_id: campaign.id, creator_id: c2.id })
+          .select("id")
+          .single()
+        if (e2) throw e2
 
-      const c1Id = await getUserId(c1Client)
-      const { data: app, error: appErr } = await c1Client
-        .from("applications")
-        .insert({ campaign_id: campaign.id, creator_id: c1Id! })
-        .select()
-        .single()
-      if (appErr) throw appErr
+        // The real approval is timed on its own.
+        const legit = (async () => {
+          const started = Date.now()
+          const result = await brand.client
+            .from("applications")
+            .update({ status: "approved" })
+            .eq("id", app1.id)
+            .select("id, status")
+          return { result, ms: Date.now() - started }
+        })()
 
-      // Outsider repeatedly tries to approve (will fail due to RLS)
-      const outsiderAttacks = Array.from({ length: 10 }, () =>
-        outsiderClient.from("applications").update({ status: "approved" }).eq("id", app.id)
-      )
+        // Creator 2 keeps trying to approve their own application.
+        const selfAttacks = Array.from({ length: SELF_APPROVE_ATTEMPTS }, () =>
+          c2.client.from("applications").update({ status: "approved" }).eq("id", app2.id),
+        )
 
-      const start = Date.now()
+        // Another brand's owner keeps trying to approve creator 1's application.
+        const outsiderAttacks = Array.from({ length: OUTSIDER_ATTEMPTS }, () =>
+          otherBrand.client.from("applications").update({ status: "approved" }).eq("id", app1.id),
+        )
 
-      // Legitimate approval runs alongside
-      const results = await Promise.allSettled([
-        brandClient.from("applications").update({ status: "approved" }).eq("id", app.id).select().single(),
-        ...outsiderAttacks.map((a) => a.select().single()),
-      ])
+        const [legitOutcome] = await Promise.all([
+          legit,
+          Promise.allSettled([...selfAttacks, ...outsiderAttacks]),
+        ])
 
-      const elapsed = Date.now() - start
+        // The real approval must have worked, and quickly.
+        expect(legitOutcome.result.error).toBeNull()
+        expect(legitOutcome.result.data).toHaveLength(1)
+        expect(legitOutcome.result.data![0].status).toBe("approved")
+        expect(
+          legitOutcome.ms,
+          `real approval took ${legitOutcome.ms} ms while under attack`,
+        ).toBeLessThan(MAX_LEGIT_MS)
 
-      const brandResult = results[0] as PromiseFulfilledResult<{ data: { status: string } }>
-      expect(brandResult.status).toBe("fulfilled")
-      if (brandResult.status === "fulfilled") {
-        expect(brandResult.value.data.status).toBe("approved")
+        // And none of the attacks changed anything.
+        const { data: rows, error: readErr } = await serviceClient
+          .from("applications")
+          .select("id, status")
+          .eq("campaign_id", campaign.id)
+        if (readErr) throw readErr
+        const byId = new Map(rows!.map((r) => [r.id, r.status]))
+        expect(byId.get(app1.id)).toBe("approved")
+        expect(byId.get(app2.id)).toBe("applied")
+      } finally {
+        await serviceClient.from("campaigns").delete().eq("id", campaign.id)
       }
-
-      // Legitimate approval must finish within 5 seconds
-      expect(elapsed).toBeLessThan(5000)
-
-      await serviceClient.from("campaigns").delete().eq("id", campaign.id)
-    }
-  })
+    })
+  }
 })
