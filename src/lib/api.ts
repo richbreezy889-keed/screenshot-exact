@@ -84,7 +84,7 @@ export function creatorCap(budget: number, creatorsNeeded: number) {
 
 /** Earnings before fee for a creator, capped at their share. */
 export function creatorEarnings(views: number, ratePer1k: number, cap: number) {
-  return Math.min(Math.floor((views / 1000) * ratePer1k), cap);
+  return Math.min(Math.floor((views * ratePer1k) / 1000), cap);
 }
 
 export function feeSplit(gross: number) {
@@ -222,7 +222,7 @@ export function campaignBudgetBreakdown(campaign: Campaign): BudgetBreakdown {
         (verifiedByCreator.get(row.creatorId) ?? 0) + result.earnings,
       );
     } else {
-      const uncapped = Math.floor((result.countingViews / 1000) * campaign.ratePer1k);
+      const uncapped = Math.floor((result.countingViews * campaign.ratePer1k) / 1000);
       pendingByCreator.set(row.creatorId, (pendingByCreator.get(row.creatorId) ?? 0) + uncapped);
     }
   }
