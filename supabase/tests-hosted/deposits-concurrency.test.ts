@@ -185,7 +185,7 @@ describe("deposits (concurrency and access)", () => {
     const freshBrand = await createBrand(owner.client, `hosted-test-deposits-cap-${run}`)
 
     const results = await Promise.all(
-      Array.from({ length: 15 }, () => request(owner.client, freshBrand, 5_000)),
+      Array.from({ length: 15 }, () => request(owner.client, freshBrand, 10_000)),
     )
     const winners = results.filter((r) => !r.error)
     const losers = results.filter((r) => r.error)

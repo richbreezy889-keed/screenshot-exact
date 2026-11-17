@@ -106,9 +106,9 @@ describe("deposits (phase 2a)", () => {
 
   it("caps pending deposits per brand", async () => {
     for (let index = 0; index < 10; index += 1) {
-      await request(IDS.brandBOwner, "authenticated", brandB, 5_000);
+      await request(IDS.brandBOwner, "authenticated", brandB, 10_000);
     }
-    await expect(request(IDS.brandBOwner, "authenticated", brandB, 5_000)).rejects.toThrow(
+    await expect(request(IDS.brandBOwner, "authenticated", brandB, 10_000)).rejects.toThrow(
       /too many pending deposits/,
     );
   });
