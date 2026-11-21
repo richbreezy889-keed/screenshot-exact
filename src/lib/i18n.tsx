@@ -396,6 +396,58 @@ export const dict = {
   confirmPasswordPlaceholder: { en: "Confirm new password", sw: "Thibitisha neno la siri mpya" },
   twoFactor: { en: "Two-factor authentication", sw: "Uthibithi wa pande mbili" },
   twoFactorPlaceholder: { en: "Coming soon", sw: "Inakuja hivi karibuni" },
+  "auth.signIn": { en: "Sign in", sw: "Ingia" },
+  "auth.signUp": { en: "Sign up", sw: "Jisajili" },
+  "auth.signOut": { en: "Sign out", sw: "Ondoka" },
+  "auth.email": { en: "Email", sw: "Barua pepe" },
+  "auth.password": { en: "Password", sw: "Neno la siri" },
+  "auth.fullName": { en: "Full name", sw: "Jina kamili" },
+  "auth.role": { en: "Account type", sw: "Aina ya akaunti" },
+  "auth.brand": { en: "Brand", sw: "Chapa" },
+  "auth.creator": { en: "Creator", sw: "Mtayarishi" },
+  "auth.noAccount": { en: "Don't have an account?", sw: "Huna akaunti?" },
+  "auth.haveAccount": { en: "Already have an account?", sw: "Tayari una akaunti?" },
+  "auth.working": { en: "Please wait...", sw: "Tafadhali subiri..." },
+  "auth.checkingEmail": {
+    en: "Check your email to confirm your account.",
+    sw: "Angalia barua pepe yako ili kuthibitisha akaunti.",
+  },
+  "auth.cannotSelfRegisterAdmin": {
+    en: "You cannot sign up as an admin.",
+    sw: "Huwezi kujisajili kama msimamizi.",
+  },
+  "auth.supabaseNotConfigured": {
+    en: "Accounts are not set up in this version of the app.",
+    sw: "Akaunti hazijawekwa kwenye toleo hili la programu.",
+  },
+  "auth.invalidCredentials": {
+    en: "Wrong email or password.",
+    sw: "Barua pepe au neno la siri si sahihi.",
+  },
+  "auth.weakPassword": {
+    en: "That password is too weak. Use a longer one.",
+    sw: "Neno la siri ni dhaifu sana. Tumia refu zaidi.",
+  },
+  "auth.emailAlreadyRegistered": {
+    en: "This email is already registered.",
+    sw: "Barua pepe hii tayari imesajiliwa.",
+  },
+  "auth.emailNotConfirmed": {
+    en: "Please confirm your email first.",
+    sw: "Tafadhali thibitisha barua pepe yako kwanza.",
+  },
+  "auth.rateLimited": {
+    en: "Too many attempts. Try again later.",
+    sw: "Majaribio mengi mno. Jaribu tena baadaye.",
+  },
+  "auth.networkFailure": {
+    en: "Network problem. Check your connection.",
+    sw: "Tatizo la mtandao. Angalia muunganisho wako.",
+  },
+  "auth.unknown": {
+    en: "Something went wrong. Please try again.",
+    sw: "Kuna tatizo. Tafadhali jaribu tena.",
+  },
 } as const;
 
 export type TKey = keyof typeof dict;

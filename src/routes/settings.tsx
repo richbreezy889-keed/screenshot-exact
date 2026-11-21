@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Bell, Building2, Globe, KeyRound, Users, type LucideIcon } from "lucide-react";
+import { Bell, Building2, Globe, KeyRound, LogOut, Users, type LucideIcon } from "lucide-react";
 import { useApp, type TKey } from "@/lib/i18n";
 import { Panel } from "@/components/biboh/primitives";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
+import { isSupabaseMode } from "@/lib/supabase";
 
 type SectionId = "company" | "language" | "notifications" | "team" | "security";
 
@@ -51,6 +53,7 @@ const PHONE_RE = /^(\+255|0)\d{9}$/;
 
 export function SettingsPage() {
   const { t, lang, setLang } = useApp();
+  const { signOut } = useAuth();
   const [section, setSection] = useState<SectionId>("company");
 
   const [brandName, setBrandName] = useState("Zuri Beauty");
@@ -426,6 +429,12 @@ export function SettingsPage() {
           <Button type="button" onClick={saveSecurity}>
             {t("settingsSave")}
           </Button>
+          {isSupabaseMode() && (
+            <Button type="button" variant="destructive" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              {t("auth.signOut")}
+            </Button>
+          )}
         </Panel>
       )}
 

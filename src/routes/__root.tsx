@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useLocation,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -13,6 +14,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppProvider } from "../lib/i18n";
+import { AuthProvider, AuthGuard } from "../lib/auth";
 import { readStoredLang } from "../lib/lang";
 import { AppShell } from "../components/biboh/AppShell";
 
@@ -127,12 +129,29 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AppProvider initialLang={lang}>
+        <AuthProvider>
+          <AuthGate />
+        </AuthProvider>
+      </AppProvider>
+    </QueryClientProvider>
+  );
+}
+
+// Login and signup render without the app shell (no sidebar).
+function AuthGate() {
+  const pathname = useLocation({ select: (l) => l.pathname });
+  const isPublic = pathname === "/login" || pathname === "/signup";
+  return (
+    <AuthGuard>
+      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      {isPublic ? (
+        <Outlet />
+      ) : (
         <AppShell>
           <Outlet />
         </AppShell>
-      </AppProvider>
-    </QueryClientProvider>
+      )}
+    </AuthGuard>
   );
 }
