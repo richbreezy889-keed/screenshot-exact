@@ -430,10 +430,12 @@ export function SettingsPage() {
             {t("settingsSave")}
           </Button>
           {isSupabaseMode() && (
-            <Button type="button" variant="destructive" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              {t("auth.signOut")}
-            </Button>
+            <div className="mt-6 border-t pt-4">
+              <Button type="button" variant="destructive" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                {t("auth.signOut")}
+              </Button>
+            </div>
           )}
         </Panel>
       )}
