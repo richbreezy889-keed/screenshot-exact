@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { AppProvider } from "@/lib/i18n";
+import { AuthProvider } from "@/lib/auth";
 import { SettingsPage } from "@/routes/settings";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -12,8 +13,10 @@ afterEach(() => {
 const renderSettings = () =>
   render(
     <AppProvider>
-      <SettingsPage />
-      <Toaster />
+      <AuthProvider>
+        <SettingsPage />
+        <Toaster />
+      </AuthProvider>
     </AppProvider>,
   );
 

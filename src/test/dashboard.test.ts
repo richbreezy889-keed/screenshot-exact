@@ -69,7 +69,7 @@ describe("needs your attention", () => {
   const awaitingVideos = (campaignId: string) =>
     (campaignDetails[campaignId]?.submissions ?? []).filter((s) => s.status === "awaiting").length;
   const pendingApplicants = (campaignId: string) =>
-    (campaignDetails[campaignId]?.applicants ?? []).filter((a) => a.status === "pending").length;
+    (campaignDetails[campaignId]?.applicants ?? []).filter((a) => a.status === "applied").length;
   const recentCheckpointViews = (campaignId: string) => {
     const campaign = campaigns.find((c) => c.id === campaignId);
     return campaign ? campaignTotals(campaign).countingViews : 0;

@@ -115,7 +115,7 @@ describe("slot limit", () => {
 
   it("drives the Approve button from the live approved count", () => {
     // Three slots, two approved: one slot still open, so Approve stays enabled.
-    expect(canApproveMore(countApproved(applicants("approved", "approved", "pending")), 3)).toBe(
+    expect(canApproveMore(countApproved(applicants("approved", "approved", "applied")), 3)).toBe(
       true,
     );
     // All three slots approved: Approve is disabled.
@@ -127,7 +127,7 @@ describe("slot limit", () => {
 
 describe("approved count derivation", () => {
   it("counts only approved applicants", () => {
-    expect(countApproved(applicants("approved", "approved", "declined", "pending"))).toBe(2);
+    expect(countApproved(applicants("approved", "approved", "rejected", "applied"))).toBe(2);
     expect(countApproved([])).toBe(0);
   });
 

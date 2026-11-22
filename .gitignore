@@ -16,6 +16,15 @@ dist-ssr
 .nitro
 *.local
 
+# Local env files (never commit keys)
+.env
+.env.*
+.env.test.local
+!.env.example
+
+# Supabase CLI temp state
+supabase/.temp/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
@@ -30,3 +39,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+package-lock.json

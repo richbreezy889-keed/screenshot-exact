@@ -1,5 +1,5 @@
 export type SubmissionStatus = "awaiting" | "revision" | "approved";
-export type ApplicantStatus = "pending" | "approved" | "declined";
+export type ApplicantStatus = "applied" | "approved" | "rejected" | "withdrawn";
 export type LedgerKind = "funded" | "paidOut" | "fee" | "returned";
 
 export interface Applicant {
@@ -48,8 +48,8 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
       { creatorId: "u12", status: "approved" },
       { creatorId: "u13", status: "approved" },
       { creatorId: "u14", status: "approved" },
-      { creatorId: "u9", status: "pending" },
-      { creatorId: "u15", status: "pending" },
+      { creatorId: "u9", status: "applied" },
+      { creatorId: "u15", status: "applied" },
     ],
     submissions: [
       { id: "s1", creatorId: "u1", submitted: "2026-10-18", status: "awaiting" },
@@ -92,7 +92,7 @@ export const campaignDetails: Record<string, CampaignDetailData> = {
       { creatorId: "u16", status: "approved" },
       { creatorId: "u17", status: "approved" },
       { creatorId: "u18", status: "approved" },
-      { creatorId: "u5", status: "pending" },
+      { creatorId: "u5", status: "applied" },
     ],
     submissions: [
       { id: "s5", creatorId: "u3", submitted: "2026-10-21", status: "awaiting" },
