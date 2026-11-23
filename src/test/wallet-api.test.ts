@@ -122,7 +122,7 @@ describe("wallet translations", () => {
   const keys = Object.keys(dict).filter((k) => k.startsWith("walletLive."))
 
   it("has the expected set of keys", () => {
-    expect(keys.length).toBe(32)
+    expect(keys.length).toBe(33)
   })
 
   it.each(keys)("%s exists in English and Swahili", (key) => {

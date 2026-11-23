@@ -492,6 +492,7 @@ export const dict = {
   "walletLive.status.failed": { en: "Failed", sw: "Imeshindwa" },
   "walletLive.status.expired": { en: "Expired", sw: "Imeisha muda" },
   "walletLive.status.other": { en: "Other", sw: "Nyingine" },
+  "walletLive.comingSoon": { en: "Top-ups coming soon", sw: "Kuweka pesa kunakuja hivi karibuni" },
 } as const;
 
 export type TKey = keyof typeof dict;

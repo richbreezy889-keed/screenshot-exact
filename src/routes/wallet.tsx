@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useApp, type TKey } from "@/lib/i18n";
+import { LiveWallet } from "@/components/biboh/LiveWallet";
+import { isSupabaseMode } from "@/lib/supabase";
 import { MOCK_TODAY } from "@/data/config";
 import { walletSnapshot, type MockTopUp, type WalletEntryKind } from "@/lib/wallet";
 import { formatDate } from "@/lib/format";
@@ -59,7 +61,7 @@ export const Route = createFileRoute("/wallet")({
   component: WalletPage,
 });
 
-export function WalletPage() {
+function MockWalletPage() {
   const { t, lang } = useApp();
   const [topUps, setTopUps] = useState<MockTopUp[]>([]);
   const snapshot = useMemo(() => walletSnapshot(topUps), [topUps]);
@@ -447,4 +449,8 @@ function WalletStat({
       {sub}
     </div>
   );
+}
+
+export function WalletPage() {
+  return isSupabaseMode() ? <LiveWallet /> : <MockWalletPage />;
 }
