@@ -8,6 +8,8 @@ import { useApp } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { CampaignCard } from "@/components/biboh/CampaignCard";
 import { ListState } from "@/components/biboh/primitives";
+import { LiveCampaigns } from "@/components/biboh/LiveCampaigns";
+import { isSupabaseMode } from "@/lib/supabase";
 
 export const Route = createFileRoute("/campaigns/")({
   head: () => ({
@@ -25,7 +27,7 @@ export const Route = createFileRoute("/campaigns/")({
 
 const tabs = ["all", "draft", "live", "completed"] as const;
 
-function CampaignsPage() {
+function MockCampaignsPage() {
   const { t } = useApp();
   const [tab, setTab] = useState<(typeof tabs)[number]>("all");
   const q = useQuery({ queryKey: ["campaigns", tab], queryFn: () => getCampaigns(tab) });
@@ -61,4 +63,8 @@ function CampaignsPage() {
       </ListState>
     </div>
   );
+}
+
+function CampaignsPage() {
+  return isSupabaseMode() ? <LiveCampaigns /> : <MockCampaignsPage />;
 }

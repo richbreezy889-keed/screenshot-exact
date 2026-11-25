@@ -493,6 +493,14 @@ export const dict = {
   "walletLive.status.expired": { en: "Expired", sw: "Imeisha muda" },
   "walletLive.status.other": { en: "Other", sw: "Nyingine" },
   "walletLive.comingSoon": { en: "Top-ups coming soon", sw: "Kuweka pesa kunakuja hivi karibuni" },
+  "campaignsLive.status.draft": { en: "Draft", sw: "Rasimu" },
+  "campaignsLive.status.live": { en: "Live", sw: "Hai" },
+  "campaignsLive.status.paused": { en: "Paused", sw: "Imesitishwa" },
+  "campaignsLive.status.completed": { en: "Completed", sw: "Imekamilika" },
+  "campaignsLive.status.cancelled": { en: "Cancelled", sw: "Imeghairiwa" },
+  "campaignsLive.status.other": { en: "Other", sw: "Nyingine" },
+  "campaignsLive.creatorsNeeded": { en: "Creators needed", sw: "Watayarishi wanaohitajika" },
+  "campaignsLive.createSoon": { en: "Creating campaigns is coming soon", sw: "Kuunda kampeni kunakuja hivi karibuni" },
 } as const;
 
 export type TKey = keyof typeof dict;
