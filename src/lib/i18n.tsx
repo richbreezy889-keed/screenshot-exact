@@ -501,6 +501,16 @@ export const dict = {
   "campaignsLive.status.other": { en: "Other", sw: "Nyingine" },
   "campaignsLive.creatorsNeeded": { en: "Creators needed", sw: "Watayarishi wanaohitajika" },
   "campaignsLive.createSoon": { en: "Creating campaigns is coming soon", sw: "Kuunda kampeni kunakuja hivi karibuni" },
+  "detailLive.resultsPaymentsSoon": { en: "Results and payments will appear here soon.", sw: "Matokeo na malipo yataonekana hapa hivi karibuni." },
+  "detailLive.actionsSoon": { en: "Approving and declining is coming soon.", sw: "Kuidhinisha na kukataa kunakuja hivi karibuni." },
+  "detailLive.noPitch": { en: "No pitch provided.", sw: "Hakuna maelezo ya ombi." },
+  "detailLive.openVideo": { en: "Open video", sw: "Fungua video" },
+  "detailLive.statusOther": { en: "Other", sw: "Nyingine" },
+  "detailLive.creatorsSoon": { en: "Creator discovery is coming soon.", sw: "Kutafuta watayarishi kunakuja hivi karibuni." },
+  "detailLive.creatorsSoonBody": {
+    en: "Creators who apply to your campaigns appear on each campaign's page.",
+    sw: "Watayarishi wanaoomba kampeni zako wanaonekana kwenye ukurasa wa kila kampeni.",
+  },
 } as const;
 
 export type TKey = keyof typeof dict;

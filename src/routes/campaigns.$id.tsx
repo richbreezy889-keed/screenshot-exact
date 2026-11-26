@@ -13,6 +13,8 @@ import {
   getCreatorById,
 } from "@/lib/api";
 import { useApp } from "@/lib/i18n";
+import { LiveCampaignDetail } from "@/components/biboh/LiveCampaignDetail";
+import { isSupabaseMode } from "@/lib/supabase";
 import { formatDate, formatViews, postPlatform } from "@/lib/format";
 import { nicheKey } from "@/lib/niche";
 import {
@@ -89,7 +91,7 @@ export const Route = createFileRoute("/campaigns/$id")({
   component: CampaignDetail,
 });
 
-function CampaignDetail() {
+function MockCampaignDetail() {
   const { id } = Route.useParams();
   const { t, lang } = useApp();
   const search = Route.useSearch();
@@ -813,4 +815,9 @@ function PaymentsTab({ data }: { data: CampaignData }) {
       </div>
     </ListState>
   );
+}
+
+function CampaignDetail() {
+  const { id } = Route.useParams();
+  return isSupabaseMode() ? <LiveCampaignDetail id={id} /> : <MockCampaignDetail />;
 }
